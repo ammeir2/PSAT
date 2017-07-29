@@ -2,12 +2,20 @@
 title: "Inference After Aggregate Testing"
 author: "Amit Meir"
 date: "7/28/2017"
-output: html_document
+output:
+  html_document: default
+  pdf_document: default
 ---
 
 ```{r setup, include=FALSE}
 knitr::opts_chunk$set(echo = TRUE)
 ```
+
+## Installing Package
+```{r, eval=FALSE, echo = TRUE}
+devtools::install_github("ammeir2/PSAT")
+```
+
 
 ## Inference for Normal Means 
 The PSAT pacakge provides functionalities for performing inference on multivariate normal vectors and generalized linear models that pass a qudratic aggregate tests. Suppose that we observe $y \sim N(\mu, \Sigma)$ and that we wish to perform inferenceo on the individual coordinates of $\mu$ only if we can reject a quadratic test of the form:

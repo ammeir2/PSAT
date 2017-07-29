@@ -105,6 +105,14 @@ plotSolutionPath <- function(object) {
 }
 
 plotPvalues <- function(object, threshold = 0.1, adjust = "bonferroni") {
+  if(is.null(adjust)) {
+    adjust <- "none"
+  }
+  adjust <- adjust[1]
+  if(!(adjust %in% c("holm", "hochberg", "hommel", "bonferroni", "BH", "BY", "fdr", "none"))) {
+    stop("Unknown p-value adjustment method. See documentation for `p.adjust` for details.")
+  }
+
   varnames <- colnames(object$sigma)
   if(is.null(varnames)) {
     varnames <- 1:ncol(object$sigma)
@@ -143,5 +151,6 @@ plotPvalues <- function(object, threshold = 0.1, adjust = "bonferroni") {
     figure <- figure +
       geom_hline(data = interceptDat, aes(yintercept = intercept, linetype = threshold))
   }
+
   return(figure)
 }

@@ -16,3 +16,4 @@ Suggests: clusterGeneration,
         expm,
         ggplot2,
         reshape2,
+        gridExtra
