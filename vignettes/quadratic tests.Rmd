@@ -1,0 +1,179 @@
+---
+title: "Inference After Aggregate Testing"
+author: "Amit Meir"
+date: "7/28/2017"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+## Inference for Normal Means 
+The PSAT pacakge provides functionalities for performing inference on multivariate normal vectors and generalized linear models that pass a qudratic aggregate tests. Suppose that we observe $y \sim N(\mu, \Sigma)$ and that we wish to perform inferenceo on the individual coordinates of $\mu$ only if we can reject a quadratic test of the form:
+
+$$
+y^{T} K y > c > 0
+$$
+
+for some pre-determined threshold $c$. Then, we must account for the fact that we have selected the model via a data driven method or in order to obtain valid p-values, confidence intervals that achieve the desire coverage rate and efficient point estimates. Let us begin with generating a dataset by sampling multivariate normal vectors and screening with a Wald test, so $K = \Sigma^{-1}$.
+
+```{r generateNormal, warning = FALSE, message = FALSE, cache = TRUE}
+# Tests for wald test ------------------------
+set.seed(123)
+p <- 6
+sparsity <- 1
+snr <- 2
+mu <- c(rep(snr / sparsity, sparsity), rep(0, p - sparsity))
+sigma <- cov2cor(clusterGeneration::genPositiveDefMat(p)$Sigma)
+sqrtSig <- expm::sqrtm(sigma)
+testmat <- solve(sigma)
+
+pthreshold <- 0.001
+threshold <- qchisq(pthreshold, p, lower.tail = FALSE)
+testStat <- 0
+invcov <- solve(sigma)
+while(testStat < threshold) {
+  z <- rnorm(p)
+  y <- as.numeric(z %*% sqrtSig) + mu
+  testStat <- as.numeric(t(y) %*% testmat %*% y)
+}
+print(round(y, 2))
+```
+
+Our threshold is `r round(threshold, 1)` and the realized test statistic is `r round(testStat, 2)`, so we just barely passed the test. Now, let us use the `mvnQuadratic` function to perform inference. The `mvnQuadratic` function can be used to compute several different types of confidence intervals and p-values. Generally speaking, the confidence interval methods `global-null` and `switch` are quite computationally intensive while the `polyhedral` method is very fast, yet somewhat less powerful when the signal is sparse. Similarly, the p-value methods `hybrid` and `global-null` are computationally intensive while the `polyhedral` method is not.
+
+```{r allfit, cache=TRUE}
+library(PSAT)
+allfit <- mvnQuadratic(y, sigma, testMat = "wald", threshold = NULL, pval_threshold = pthreshold,
+                       estimate_type = c("mle", "naive"),
+                       pvalue_type = c("polyhedral", "hybrid", "naive", "global-null"),
+                       ci_type = c("polyhedral", "switch", "naive", "global-null"),
+                       confidence_level = 0.05,
+                       switchTune = c("sqrd", "half"),
+                       nSamples = NULL, verbose = TRUE)
+
+```
+
+Notice that when calling `mvnQuadratic`, we listed several methods for confidence interval and p-value computations. The function will compute all of the requested quantities. A good way to examine the outputs of the function is to plot the estimates and confidence intervals, in the following function call we will provide the plotting function with the ground truth so we can see whether our confidence intervals have successfully identified the true signal. 
+
+```{r estimate plot, cache=TRUE}
+plot(allfit, type = "estimates", true = mu)
+```
+
+In the figure, notice that the naive confidence intervals miss one of the true signals. Also, notice that while the polyhedral confidence intervals tend to be narrower than the global-null or regime switching confidence intervals, they fail to detect that the first coordinate of the mean vector is different from zero. These are all typical behaviors of for these inference methods. Also, notice that the selection adjusted MLE has applied some shrinkage to the observed coordinates of the mean vector. 
+
+Next, let us examine some ways to access the quantities we computed. The simplest way, is perhaps to access them directly through the returned object.
+
+```{r list pval}
+cat("polyhedral pvalues: ", round(allfit$polyPval, 3), "\n")
+cat("global-null pvalues: ", round(allfit$nullPval, 3), "\n")
+cat("hybrid pvalues: ", round(allfit$hybridPval, 3), "\n")
+```
+
+A second option is to use the `getCI` and `getPval` functions.
+```{r, getci}
+cat("polyhedral pvalues: ", round(getPval(allfit, type = "polyhedral"), 3), "\n")
+print(round(getCI(allfit, type = "polyhedral"), 3))
+```
+
+The `getCI` function also allows to compute confidence intervals based on a different confidence level than the one used in the original computation
+```{r getci2}
+# Original confidence interval:
+print(round(getCI(allfit, type = "switch"), 3))
+# Some more conservative confidence intervals:
+print(round(getCI(allfit, type = "switch", confidence_level = 0.01), 3))
+```
+
+The `mvnQuadratic` function can also be used to perform inference for quadratic tests different than the Wald test. In such cases, the conditional MLE cannot be computed in closed and we resort to using a stochastic gradient method. To verify that stochastic gradient method indeed converges to the neighborhood of the MLE, in the next chunk we will perform inference on the same dataset as before but instead of telling the function that we are using a Wald test we will pass the inverse of the covariance matrix as a general test matrix.
+
+```{r sgdfit,cache=TRUE}
+testmat <- solve(sigma)
+sgdfit <- mvnQuadratic(y, sigma, testMat = testmat, threshold = NULL, pval_threshold = pthreshold,
+                       estimate_type = c("mle", "naive"),
+                       pvalue_type = c("polyhedral", "hybrid", "naive", "global-null"),
+                       ci_type = c("polyhedral", "switch", "naive", "global-null"),
+                       confidence_level = 0.05,
+                       switchTune = c("sqrd", "half"),
+                       nSamples = NULL, verbose = FALSE)
+```
+
+Notice that the function has given us a warning that the Regime Switching confidnece intervals and Global-Null confidence intervals may be more conservative here, because we are unable to bootstrap the distribution of the MLE exactly. Next, let us evaluate the solution paths of the SGD algorithm:
+```{r solutionpath, cache = TRUE}
+plot(sgdfit, type = "solution-path")
+```
+
+
+We can also compare the new result to the old one, as the two maximum likelihood estimates should be roughly the same.
+```{r compare sgd}
+plot(y, coef(sgdfit), col = "red")
+points(y, coef(allfit), col = "blue", pch = 2)
+abline(a = 0, b = 1)
+legend("topleft", col = c("blue", "red"), pch = 1:2, 
+       legend = c("exact MLE", "SGD MLE"))
+```
+
+## Inference for Generalized Linear Models
+The PSAT pacakge can also be used to perform inference in generalized linear models that were selected via an aggregate test. These functionalities are based on the assumption that the distribution of the (naive) maximum likelihood estimator for the regression coefficients is approximately normal. That is:
+$$
+\hat\beta \sim N(\beta, (XWX)^{-1})
+$$
+
+where the weight matrix $W$ may depend on the estimated regression coefficients $\hat\beta$ and the type of GLM used. Next, let us generate data from a logistic regression model using an arbitrary matrix $K$ as our test matrix.
+
+```{r, logisitcdata}
+set.seed(1234)
+pthreshold <- 0.001
+n <- 500
+p <- 20
+xcov <- cov2cor(clusterGeneration::genPositiveDefMat(p)$Sigma)
+X <- as.matrix(scale(mvtnorm::rmvnorm(n, sigma = xcov)))
+X <- as.matrix(scale(X))
+sparsity <- 3
+snr <- 0.5
+beta <- rnorm(sparsity)
+beta <- beta / sum(abs(beta)) * snr
+beta <- c(beta, rep(0, p - sparsity))
+eta <- -0.5 + as.numeric(X %*% beta)
+probs <- 1 / (1 + exp(-eta))
+testmat <- cov2cor(clusterGeneration::genPositiveDefMat(p)$Sigma)
+while(TRUE) {
+  y <- rbinom(n, 1, probs)
+  glmfit <- glm(y ~ X, family = "binomial")
+  est <- coef(glmfit)[-1]
+  sigma <- vcov(glmfit)[-1, , drop = FALSE][, -1, drop = FALSE]
+  threshold <- getQuadraticThreshold(pthreshold, getQudraticLam(testmat, sigma))
+  testStat <- as.numeric(t(est) %*% testmat %*% est)
+  if(testStat > threshold) break
+}
+
+```
+
+Performing inference and plotting estimates: 
+
+```{r, cache = TRUE}
+glmfit <- glmQuadratic(X, y, testMat = testmat, family = "binomial",
+                       resid_sd = c("ysd", "naive"),
+                       threshold = NULL, pval_threshold = pthreshold,
+                       estimate_type = c("mle", "naive"),
+                       pvalue_type = c("polyhedral", "hybrid", "naive", "global-null"),
+                       ci_type = c("polyhedral", "switch", "naive", "global-null"),
+                       confidence_level = 0.05,
+                       switchTune = c("sqrd", "half"),
+                       nSamples = 2000, verbose = FALSE)
+```
+```{r}
+plot(glmfit, type = "estimates", true = beta)
+```
+
+Notice that the naive confidence intervals miss three of the true coefficients and that the switching regime confidence intervals manage to identify one of the coefficients as being non-zero. The `glmQuadratic` function also provides some standard regression interfaces such as the `coef`, `predict` and `summary` functions. When reporting confidence intervals, pvalues or summaries, the reported quantities will be the first listed in the original function call, unless specified otherwise.  
+
+```{r}
+print(round(rbind(coef(glmfit, type = "naive"), coef(glmfit, type = "mle"))[, 1:10], 3))
+print(round(predict(glmfit)[1:10], 3))
+summary(glmfit, pvalue_type = "hybrid", ci_type = "switch")
+```
+
+
+
+

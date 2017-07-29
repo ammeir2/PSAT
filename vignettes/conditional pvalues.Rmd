@@ -1,0 +1,99 @@
+---
+title: "P-values post Selection by Aggregate Testing (PSAT)"
+author: "Ruth Heller"
+date: "2017 - 02 - 23"
+output:
+  pdf_document: default
+  html_document: default
+vignette: |
+  %\VignetteIndexEntry{Vignette Title} %\VignetteEngine{knitr::rmarkdown} %\VignetteEncoding{UTF-8}
+---
+
+#Overview#
+PSAT is an R package for computing conditional p-values following selection with an aggregate level test statistic. One of the main function, aggregatePvalues, computes conditional p-values after selection based on global null p-values. Currently, selection by Fisher and Pearson global null p-values are implemented. See details in our [paper](http://dx.doi.org/10.1101/058404).
+
+#Examples#
+The following are examples of computing conditional p-values, conditional on the fact that the global null p-value was below a predefined selection threshold. 
+
+First, we generate 2 features (rows), each examined in 20 studies (columns). We compute the one-sided and two-sided individual level p-values for these featrures. 
+```{r, eval = TRUE,echo=T}
+library(PSAT)
+
+set.seed(123)
+  beta  = c(rnorm(10,0,2.5), rep(0, 32))
+
+  pmat1sided <- matrix(1-pnorm(rnorm(40,beta)), nrow=2, ncol=20, byrow=TRUE) #one-sided p-values
+  print(round(pmat1sided,3))
+  
+  pmat2sided = 2*pmin(pmat1sided, 1-pmat1sided) #two-sided p-values
+  print(round(pmat2sided,3))  
+
+```
+
+The one-sided Figher global null p-value and conditional p-values given that Fisher's global null p-value is at most 0.001 are computed using the function `aggregatePvalues` as follows. Note that if a feature (row) has global null p-value above the selection threshold, the conditional p-values are set as NA's. 
+```{r,eval = TRUE, fig.width=6, fig.align='center',echo=T}
+
+  out.Fisher= aggregatePvalues(pmat1sided, globaltest = "Fisher", pv.threshold=0.001)
+  print(out.Fisher)
+  
+  #plot the original p-values, and the conditional p-values after global null selection by Fisher, 
+  # for the selected row. 
+  par(mfrow=c(1,1))
+  plot(seq(1:20), -log10(pmat1sided[1,]), col="red", ylab = "-log10(PV)", 
+     main="conditional and original one-sided p-values on -log10 scale" )
+  points(seq(1:20), -log10(out.Fisher$p2C[1,]), pch = 2)
+  legend(12,8, c("original",  "cond Fisher"), pch = c(1,2), col=c("red", "black"))
+  abline(-log10(0.05/20),0,lty=2, col="gray")
+
+
+
+```
+
+
+
+The two-sided Fisher global null p-value and conditional p-values given that two-sided Fisher's global null p-value is at most 0.001 are computed using the function `aggregatePvalues` as follows. 
+```{r,eval = TRUE, fig.width=6, fig.align='center',echo=T}
+
+  out.Fisher= aggregatePvalues(pmat2sided, globaltest = "Fisher", pv.threshold=0.001)
+  print(out.Fisher)
+  
+  #plot the original p-values, and the conditional p-values after global null selection by Fisher,
+  # for the selected row. 
+  par(mfrow=c(1,1))
+  plot(seq(1:20), -log10(pmat2sided[1,]), col="red", ylab = "-log10(PV)", 
+    main="conditional and original two-sided p-values on -log10 scale" )
+  points(seq(1:20), -log10(out.Fisher$p2C[1,]), pch = 2)
+  legend(12,8, c("original",  "cond Fisher"), pch = c(1,2), col=c("red", "black"))
+  abline(-log10(0.05/20),0,lty=2, col="gray")
+
+
+
+```
+
+
+The Pearson global null p-value and conditional p-values given that Pearson's global null p-value is at most 0.001 are computed using the function `aggregatePvalues` as follows. 
+```{r,eval = TRUE, fig.width=6, fig.align='center',echo=T}
+
+  out.Pearson = aggregatePvalues(pmat1sided, globaltest = "Pearson", pv.threshold=0.001)
+  print(out.Pearson)
+
+  #plot the original p-values, and the conditional p-values after global null selection by Pearson, 
+  # for the selected row. 
+  par(mfrow=c(1,1))
+  plot(seq(1:20), -log10(pmat2sided[1,]), col="red", ylab = "-log10(PV)",
+    main="conditional and original two-sided p-values on -log10 scale" )
+  points(seq(1:20), -log10(out.Pearson$p2C[1,]), pch = 2)
+  legend(12,8, c("original",  "cond Pearson"), pch = c(1,2), col=c("red", "black"))
+  abline(-log10(0.05/20),0,lty=2, col="gray")
+
+
+```
+
+
+
+#Guidelines on when to use  2-sided Fisher versus Pearson global null p-values 
+
+For selection of features (i.e., the rows), we combined p-values across the different  (columns). If the individual level alternatives are two-sided, we can do it either by using Fisher's combining function on two-sided p-values are  by  a  Fisher style test suggested by Pearson,  which  runs the Fisher combining method for left-sided alternatives, and separately for right-sided alternatives, and takes the maximum of the two resulting statistics (see Section 5 of our [paper](http://dx.doi.org/10.1101/058404) for details).  This test has a strong preference for common directionality (i.e., it will have greater power than a test based on Fisher's combining method on two-sided p-values when the direction of the signal is consistent across columns), while not requiring us to know the common direction.
+
+In the example above, there was no favored direction in our simulated signal and the two-sided Fisher global null p-values was smaller than Pearson's global null p-value for the first feature (and the conditional p-values following selection by the two-sided Fisher global null p-value were smaller than the conditional p-values following selection by Pearson's global null p-value). However, in many applications, e.g., the cross-tissue eQTL analysis in The Cancer Genome Atlas project (described in Section 5 of our [paper](http://dx.doi.org/10.1101/058404)), if there is an association it is more likely in the same direction in most studies (columns), and hence Pearson's global null p-values will tend to be smaller than the two-sided Fisher global null p-values. In such case, Pearson's global null p-values should be used for greater power of the post-selection inference based on the conditional p-values.  
+
