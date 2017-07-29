@@ -18,7 +18,7 @@ while(testStat < threshold) {
   testStat <- as.numeric(t(y) %*% testmat %*% y)
 }
 
-allfit <- mvnQuadratic(y, sigma, testMat = testmat, threshold = NULL, pval_threshold = pthreshold,
+allfit <- mvnQuadratic(y, sigma, testMat = "wald", threshold = NULL, pval_threshold = pthreshold,
                        estimate_type = c("mle", "naive"),
                        pvalue_type = c("polyhedral", "hybrid", "naive", "global-null"),
                        ci_type = c("polyhedral", "switch", "naive", "global-null"),

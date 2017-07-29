@@ -63,6 +63,17 @@ plot(allfit, type = "estimates", true = mu)
 
 In the figure, notice that the naive confidence intervals miss one of the true signals. Also, notice that while the polyhedral confidence intervals tend to be narrower than the global-null or regime switching confidence intervals, they fail to detect that the first coordinate of the mean vector is different from zero. These are all typical behaviors of for these inference methods. Also, notice that the selection adjusted MLE has applied some shrinkage to the observed coordinates of the mean vector. 
 
+We can also plot the p-values with or without multiplicity adjustment.
+```{r pvalue plot}
+noadjust <- plot(allfit, type = "p-values", threshold = c(0.1, 0.01),
+                 adjust = "none")
+bhadjust <- plot(allfit, type = "p-values", threshold = c(0.1, 0.01),
+                 adjust = "BH")
+gridExtra::grid.arrange(noadjust, bhadjust, nrow = 2)
+
+```
+
+
 Next, let us examine some ways to access the quantities we computed. The simplest way, is perhaps to access them directly through the returned object.
 
 ```{r list pval}
