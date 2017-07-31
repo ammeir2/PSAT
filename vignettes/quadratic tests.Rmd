@@ -55,9 +55,9 @@ Our threshold is `r round(threshold, 1)` and the realized test statistic is `r r
 library(PSAT)
 allfit <- mvnQuadratic(y, sigma, testMat = "wald", threshold = NULL, pval_threshold = pthreshold,
                        estimate_type = c("mle", "naive"),
-                       pvalue_type = c("polyhedral", "hybrid", "naive", "global-null"),
-                       ci_type = c("polyhedral", "switch", "naive", "global-null"),
-                       confidence_level = 0.05,
+                       pvalue_type = c("hybrid", "polyhedral", "naive", "global-null"),
+                       ci_type = c("switch", "polyhedral", "naive", "global-null"),
+                       confidence_level = .95,
                        switchTune = c("sqrd", "half"),
                        nSamples = NULL, verbose = TRUE)
 
@@ -112,7 +112,7 @@ sgdfit <- mvnQuadratic(y, sigma, testMat = testmat, threshold = NULL, pval_thres
                        estimate_type = c("mle", "naive"),
                        pvalue_type = c("polyhedral", "hybrid", "naive", "global-null"),
                        ci_type = c("polyhedral", "switch", "naive", "global-null"),
-                       confidence_level = 0.05,
+                       confidence_level = .95,
                        switchTune = c("sqrd", "half"),
                        nSamples = NULL, verbose = FALSE)
 ```
@@ -161,7 +161,7 @@ while(TRUE) {
   glmfit <- glm(y ~ X, family = "binomial")
   est <- coef(glmfit)[-1]
   sigma <- vcov(glmfit)[-1, , drop = FALSE][, -1, drop = FALSE]
-  threshold <- getQuadraticThreshold(pthreshold, getQudraticLam(testmat, sigma))
+  threshold <- getTestThreshold(pthreshold, sigma, testmat)
   testStat <- as.numeric(t(est) %*% testmat %*% est)
   if(testStat > threshold) break
 }
@@ -175,14 +175,16 @@ glmfit <- glmQuadratic(X, y, testMat = testmat, family = "binomial",
                        resid_sd = c("ysd", "naive"),
                        threshold = NULL, pval_threshold = pthreshold,
                        estimate_type = c("mle", "naive"),
-                       pvalue_type = c("polyhedral", "hybrid", "naive", "global-null"),
-                       ci_type = c("polyhedral", "switch", "naive", "global-null"),
-                       confidence_level = 0.05,
+                       pvalue_type = c("hybrid", "polyhedral", "naive", "global-null"),
+                       ci_type = c("switch", "polyhedral", "naive", "global-null"),
+                       confidence_level = .95,
                        switchTune = c("sqrd", "half"),
-                       nSamples = 2000, verbose = FALSE)
+                       nSamples = 4000, verbose = FALSE)
 ```
+
 ```{r}
 plot(glmfit, type = "estimates", true = beta)
+plot(glmfit, type = "p-values", adjust = "none", threshold = c(0.05, 0.05 / p))
 ```
 
 Notice that the naive confidence intervals miss three of the true coefficients and that the switching regime confidence intervals manage to identify one of the coefficients as being non-zero. The `glmQuadratic` function also provides some standard regression interfaces such as the `coef`, `predict` and `summary` functions. When reporting confidence intervals, pvalues or summaries, the reported quantities will be the first listed in the original function call, unless specified otherwise.  

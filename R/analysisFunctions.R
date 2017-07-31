@@ -1,3 +1,27 @@
+#' Retrieve Selection Adjusted Confidence Intervals
+#'
+#' @description A function for retrieving selection adjusted confidence intervals
+#' obtained after aggregate testing using the \code{\link{mvnQuadratic}}
+#' and \code{\link{glmQuadratic}} functions.
+#'
+#' @param object an object of class \code{\link{mvnQuadratic}} or
+#' \code{\link{glmQuadratic}}.
+#'
+#' @param type the type of confidence interval to contruct, see the
+#' the documentation of \code{\link{mvnQuadratic}} for details.
+#'
+#' @param confidence_level the desired confidence level for the confidence
+#' intervals
+#'
+#' @param switchTune tuning parameter for Regime Switching confidence intervals.
+#'
+#' @details This function retrieves confidence intervals from a post-aggregate testing analysis.
+#' if \code{type} is left as \code{NULL} then the confidence interval is the first listed in the
+#' \code{ci_type} field of the original function call. If \code{switchTune} is left
+#' as \code{NULL} then the method used in the original function call will be used.
+#'
+#' @return a set of confidence intervals for the normal means/regression
+#' coefficients.
 getCI <- function(object, type = NULL, confidence_level = NULL, switchTune = NULL) {
   # Checking arguments ---------
   if(!(class(object) %in% c("mvnQuadratic", "glmQuadratic"))) {
@@ -20,12 +44,13 @@ getCI <- function(object, type = NULL, confidence_level = NULL, switchTune = NUL
   }
 
   if(is.null(confidence_level)) {
-    confidence_level <- object$confidence_level
+    confidence_level <- 1 - object$confidence_level
     recompute <- FALSE
-  } else if(confidence_level == object$confidence_level) {
+  } else if((1 - confidence_level) == object$confidence_level) {
     recompute <- FALSE
   } else {
     recompute <- TRUE
+    confidence_level <- 1 - confidence_level
   }
 
   # Polyhedral ----------
@@ -96,6 +121,11 @@ getCI <- function(object, type = NULL, confidence_level = NULL, switchTune = NUL
 }
 
 getPval <- function(object, type = NULL) {
+  # If aggregate pvalues --------------
+  if(class(object) == "aggregatePvalues") {
+    return(object$p2C)
+  }
+
   # Checking arguments ---------
   if(!(class(object) %in% c("mvnQuadratic", "glmQuadratic"))) {
     stop("Invalid object type!")
@@ -292,7 +322,7 @@ print.glmQuadratic_summary <- function(sum) {
   cat("Results for Post-Aggregate Testing Analysis \n \n")
   cat("Estimation Method: ", sum$estimate_type, "\n")
   cat("P-value Type: ", sum$pvalue_type, "\n")
-  cat("Confidence Interval Type: ", sum$ci_type, "      Confidence Level:", sum$confidence_level, "\n\n")
+  cat("Confidence Interval Type: ", sum$ci_type, "      Confidence Level:", 1 - sum$confidence_level, "\n\n")
   cat("Table of Coefficients:\n")
   coefs <- sum$coefficients
   coefs[, 1:3] <- round(coefs[, 1:3], 5)

@@ -1,9 +1,96 @@
+#' Inference for Normal Means after Aggregate Testing
+#'
+#' @description \code{mvnQuadratic} is used to estimate a normal means model that was selected based
+#' on a single quadratic aggregate test of the form:
+#' \deqn{y' K y > c > 0}
+#'
+#' @param y the observed normal vector.
+#'
+#' @param sigma the covariance matrix of \code{y}.
+#'
+#' @param testMat the test matrix \eqn{K} used in the aggregate test
+#'
+#' @param threshold the threshold \eqn{c > 0} used in the aggregate test.
+#'
+#' @param pthreshold the signficance level of the aggregate test.
+#' Overrided by \code{threshold} if both are provided.
+#'
+#' @param estimate_type the types of point estimates to compute and report. The first
+#' estimator listed will be reported by defaults.
+#'
+#' @param pvalue_type a vector of methods with which to compute the p-values. The first
+#' method listed will be reported as default.
+#'
+#' @param ci_type a vector of confidence interval computation methods to be used.
+#'  The first method listed will be reported by default.
+#'
+#' @param confidence_level the confidence level for the confidencei intervals.
+#'
+#' @param switchTune tuning method for computing the regime switching confidence
+#'  intervals
+#'
+#' @param nSamples number of samples to take from the truncated global null distribution.
+#'  This only applies if the \code{global-null}, \code{switch} or \code{hybrid} options
+#'  are specified.
+#'
+#' @param verbose whether to report the progress of the computation.
+#'
+#' @details The function is used to perform inference of normal vect
+#' that were selected based on a single quadratic aggregate test. To be exact, suppose
+#' that \eqn{y ~ N(\mu,\Sigma)} and that we are interested in estimating \eqn{\mu}
+#' only if we can determine that \eqn{\mu\neq 0} using an aggregate test of the form:
+#' \deqn{y' K y > c > 0} for some predetermined constant \eqn{c}. If \code{testMat} is set
+#' to the default value of "wald", then \eqn{K = \Sigma^{-1}}. If wald test is used, it is
+#' recommended to specify \code{testMat} as "wald" as this setting makes some of computations
+#' more efficient. Otherwise, \code{testMat} must be a positive definite matrix of an
+#' appropriate dimension.
+#'
+#' If \code{estimate_type} includes the string "mle" then \code{mvnQuadratic}
+#' will compute the conditional maximum likelihood estimator for the mean vector,
+#' which is typically a shrinkage estimator.  If \code{testMat = "wald"} then the
+#' computation is performed via an efficient line-search method. Otherwise, a
+#' stochastic gradient method is used.
+#'
+#' The \code{threshold} parameter specifies the constant \eqn{c>0} which is used
+#' to threshold the aggregate test. It takes precedence over \code{pthreshold} if both
+#' are specified. We use the \code{\link[CompQuadForm]{liu}} function to compute the the
+#' threshold if a non-Wald test is used.
+#'
+#' \code{mvnQuadratic} offers several options for computing p-values. The "global-null"
+#' method relies on comparing the magnitude of \eqn{y} to samples from the truncated
+#' global-null distribution. This method is powerful when \eqn{\mu} is sparse and its
+#' non-zero components are not very large. The "polyhedral" method is exact when the
+#' observed data is approximately normal and is quite robust to model misspecification.
+#' It tends to be more powerful than the `global-null` method when the magnitude of
+#' \eqn{\mu} is large. The "hybrid" method combines the strengths of the "global-null"
+#' and "polyhedral" methods, possessing good power regardless of the sparsity or
+#' magnitude of \eqn{\mu}, but is not as robust to the misspecification of the distribution
+#' of \eqn{y} as the "polyhedral" method. The confidence interval methods are similar to the p-values ones, with the Regime switching
+#' confidence intervals ("switch") serving a simialr purpose as the "hybrid" method.
+#'
+#' The \code{switchTune} field is used to specifiy how the Regime Switching confidence
+#' intervals should be used. Let \eqn{t1} be the quantile of the aggregate test used for
+#' screening (\code{pthreshold}) and let \eqn{\alpha} equal one minus \code{confidence_level}.
+#' The regime switching confidence intervals work by performing a secondary aggregate test at
+#' at a quantile \eqn{\gamma} and if the second test is rejected then unadjusted confidence
+#' intervals at a level \eqn{1 - \alpha} are reporeted. If the second test is not rejected
+#' then global-null confidence intervals at a level \eqn{1 - \alpha + \gamma} are reported.
+#' If \code{switchTune} is set to "sqrd" then \eqn{\gamma = t1 \alpha^{2}} and
+#' \eqn{\gamma = t1 \alpha/2} if \code{switchTune} is set to "half".
+#'
+#' They regime switching confidence intervals work by performing
+#' a secondary aggregate test at a level
+#'
+#' @return An object of class \code{mvnQuadratic}.
+#'
+#' @seealso \code{\link{getCI}}, \code{\link{getPval}},
+#' \code{\link{coef.mvnQuadratic}}, \code{\link{plot.mvnQuadratic}}.
 mvnQuadratic <- function(y, sigma, testMat = "wald",
                          threshold = NULL, pval_threshold = 0.05,
                          estimate_type = c("mle", "naive"),
-                         pvalue_type = c("polyhedral", "hybrid", "naive", "global-null", "mle"),
-                         ci_type = c("polyhedral", "switch", "naive", "global-null", "mle"),
-                         confidence_level = 0.05,
+                         pvalue_type = c("hybrid", "polyhedral", "naive", "global-null"),
+                         ci_type = c("switch", "polyhedral", "naive", "global-null"),
+                         confidence_level = .95,
                          switchTune = c("sqrd", "half"),
                          nSamples = NULL, verbose = TRUE) {
   # Validating parameters --------------------
@@ -53,6 +140,7 @@ mvnQuadratic <- function(y, sigma, testMat = "wald",
   if(confidence_level < 0 | confidence_level > 1) {
     stop("confidence_level must be between 0 and 1!")
   }
+  confidence_level <- 1 - confidence_level
 
   switchTune <- switchTune[1]
   if(!(switchTune %in% c("sqrd", "half"))) {
@@ -296,7 +384,7 @@ mvnQuadratic <- function(y, sigma, testMat = "wald",
   results$invcov <- invcov
   results$pthreshold <- pthreshold
   results$threshold <- threshold
-  results$confidence_level <- confidence_level
+  results$confidence_level <- 1 - confidence_level
   results$switchTune <- switchTune
   results$estimate_type <- estimate_type
   results$pvalue_type <- pvalue_type
@@ -321,27 +409,3 @@ conditionalDnorm <- function(lambda, y, precision, ncp, threshold) {
   return(condDens)
 }
 
-getQudraticLam <- function(testMat, sigma) {
-  c <- chol(sigma)
-  tempmat <- c %*% testMat %*% t(c)
-  eig <- eigen(tempmat)
-  vec <- eig$vectors
-  P <- t(vec)
-  lam <- eig$values
-  return(lam)
-}
-
-getQuadraticThreshold <- function(quantile, lam) {
-  lower <- 0
-  upper <- 1
-  prob <- CompQuadForm::liu(upper, lam)
-  while(prob > quantile) {
-    lower <- upper
-    upper <- upper * 2
-    prob <- CompQuadForm::liu(upper, lam)
-  }
-
-  q <- uniroot(function(x) CompQuadForm::liu(x, lam) - quantile,
-               interval = c(lower, upper))$root
-  return(q)
-}

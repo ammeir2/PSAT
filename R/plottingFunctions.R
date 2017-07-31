@@ -1,4 +1,28 @@
-plot.glmQuadratic <- function(object, type = c("estimates", "solution_path"), ... ) {
+#' Plot results for glmQuadratic Objects
+#'
+#' @description An interface for plotting the results of a post-selection analysis
+#' following an aggregate test. At the moment, methods for plotting
+#' estimates and confidence intervals, p-values and stochastic gradietn solution
+#' paths are implemented.
+#'
+#' @param object and object of class \code{mvnQuadratic} or \code{glmQuadratic}.
+#'
+#' @param type the type of plot to be generated.
+#'
+#' @param ... additional arguments to be passed to plotting function.
+#'
+#' @details This functions serves as an interface for plotting the results
+#' of post aggregatet testing inference. The function calls the \code{\link{plotEstimates}}
+#' function for \code{type} "estimates", the \code{\link{plotSolutionPath}} method for
+#' \code{type} "solutionPath" and \code{\link{plotPvalues}} for \code{type} "p-values".
+#' See documentation for these functions for details regarding additional optional parameters.
+#'
+#' @return a \code{\link[ggplot2]{ggplot2}} figure.
+#'
+#' @seealso \code{\link{mvnQuadratic}}, \code{\link{glmQuadratic}},
+#' \code{\link{plotEstimates}}, \code{\link{plotSolutionPath}},
+#'  \code{\link{plotPvalues}}
+plot.glmQuadratic <- function(object, type = c("estimates", "solution_path", "p-values"), ... ) {
   object$naiveMu <- object$naiveBeta[-1]
   if(!is.null(object$mleBeta)) {
     object$mleMu <- object$mleBeta[-1]
@@ -8,8 +32,10 @@ plot.glmQuadratic <- function(object, type = c("estimates", "solution_path"), ..
   return(plot(object, type = type, ...))
 }
 
-plot.mvnQuadratic <- function(object, type = c("estimates", "solution-path"), ...) {
-  require(ggplot2)
+#' Plot results for mvnQuadratic Objects
+#'
+#' @description see \code{\link{plot.glmQuadratic}} for details.
+plot.mvnQuadratic <- function(object, type = c("estimates", "solution-path", "p-values"), ...) {
   type <- type[1]
   if(type == "estimates") {
     return(plotEstimates(object, ...))
@@ -27,6 +53,22 @@ plot.mvnQuadratic <- function(object, type = c("estimates", "solution-path"), ..
   stop("Unknown plotting method!")
 }
 
+#' Plotting Functions for Post Aggregate Testing Inference Results
+#'
+#' @description Functions for plotting the results of post aggregate testing
+#' analyses.
+#'
+#' @param true the true values of the estimated means or regression coefficients.
+#' Mostly useful for experiments with simulated data.
+#'
+#' @param threshold a vector of thresholds to be plotted along with the p-values.
+#'
+#' @param adjust method for adjusting the p-values. See \code{\link[stats]{p.adjust}}
+#' for details.
+#'
+#' @return A \code{\link[ggplot2]{ggplot2}} figure.
+#'
+#' @describeIn plotEstimates plots estimates and confidence intervals.
 plotEstimates <- function(object, true = NULL) {
   naive <- object$naiveMu
   p <- length(naive)
@@ -73,9 +115,9 @@ plotEstimates <- function(object, true = NULL) {
                           lci = NA, uci = NA, estimate_type = "truth",
                           ci_type = NA, offset = offset,
                           stringsAsFactors = FALSE)
+    plotdat <- rbind(plotdat, truedat)
   }
 
-  plotdat <- rbind(plotdat, truedat)
   plotdat$variable <- plotdat$variable + plotdat$offset * 0.12
   ggplot(subset(plotdat, !is.na(ci_type))) +
     geom_segment(aes(x = variable, xend = variable,
@@ -89,6 +131,8 @@ plotEstimates <- function(object, true = NULL) {
     ylab("Estimates / CIs") + xlab("Variable")
 }
 
+#' @describeIn plotEstimates plots the solution path of a stochastic
+#' gradient method.
 plotSolutionPath <- function(object) {
   path <- object$solutionPath
   if(is.null(path)) {
@@ -104,6 +148,7 @@ plotSolutionPath <- function(object) {
     geom_hline(yintercept = 0)
 }
 
+#' @describeIn plotEstimates plots the selection adjusted p-values.
 plotPvalues <- function(object, threshold = 0.1, adjust = "bonferroni") {
   if(is.null(adjust)) {
     adjust <- "none"
@@ -132,6 +177,7 @@ plotPvalues <- function(object, threshold = 0.1, adjust = "bonferroni") {
   }
 
   plotdat <- rbind(naive, do.call("rbind", plotlist))
+  plotdat$variable <- factor(plotdat$variable, levels = varnames)
   plotdat$p_value <- p.adjust(plotdat$p_value, method = adjust)
   plotdat$p_value <- -log10(plotdat$p_value)
   if(adjust == "none") {

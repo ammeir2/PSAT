@@ -95,5 +95,7 @@ aggregatePvalues <- function(pmat, globaltest = c("Fisher", "Pearson"), pv.thres
     }# end if (n>0)
   }#end for (i in 1:M)
 
-  return(list(pF = pF, p2C = p2C))
+  result <- list(pF = pF, p2C = p2C)
+  class(result) <- "aggregatePvalues"
+  return(result)
 }#Conditional.pvalues

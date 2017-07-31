@@ -1,3 +1,25 @@
-exportPattern("^[[:alpha:]]+")
+#exportPattern("^[[:alpha:]]+")
 importFrom(Rcpp, sourceCpp)
 useDynLib(PSAT)
+
+export(mvnQuadratic)
+export(glmQuadratic)
+export(aggregatePvalues)
+
+export(getCI)
+export(getPval)
+export(plotEstimates)
+export(plotSolutionPath)
+export(plotPvalues)
+export(getTestThreshold)
+
+S3method(summary, glmQuadratic)
+S3method(coef, mvnQuadratic)
+S3method(coef, glmQuadratic)
+S3method(predict, mvnQuadratic)
+S3method(predict, glmQuadratic)
+S3method(plot, mvnQuadratic)
+S3method(plot, glmQuadratic)
+S3method(print, glmQuadratic_summary)
+
+import(ggplot2)
