@@ -12,7 +12,7 @@
 #'
 #' @param threshold the threshold \eqn{c > 0} used in the aggregate test.
 #'
-#' @param pthreshold the signficance level of the aggregate test.
+#' @param pval_threshold the signficance level of the aggregate test.
 #' Overrided by \code{threshold} if both are provided.
 #'
 #' @param estimate_type the types of point estimates to compute and report. The first
@@ -52,7 +52,7 @@
 #' stochastic gradient method is used.
 #'
 #' The \code{threshold} parameter specifies the constant \eqn{c>0} which is used
-#' to threshold the aggregate test. It takes precedence over \code{pthreshold} if both
+#' to threshold the aggregate test. It takes precedence over \code{pval_threshold} if both
 #' are specified. We use the \code{\link[CompQuadForm]{liu}} function to compute the the
 #' threshold if a non-Wald test is used.
 #'
@@ -70,7 +70,7 @@
 #'
 #' The \code{switchTune} field is used to specifiy how the Regime Switching confidence
 #' intervals should be used. Let \eqn{t1} be the quantile of the aggregate test used for
-#' screening (\code{pthreshold}) and let \eqn{\alpha} equal one minus \code{confidence_level}.
+#' screening (\code{pval_threshold}) and let \eqn{\alpha} equal one minus \code{confidence_level}.
 #' The regime switching confidence intervals work by performing a secondary aggregate test at
 #' at a quantile \eqn{\gamma} and if the second test is rejected then unadjusted confidence
 #' intervals at a level \eqn{1 - \alpha} are reporeted. If the second test is not rejected
@@ -149,6 +149,7 @@ mvnQuadratic <- function(y, sigma, testMat = "wald",
 
   # Setting threshold ----------------------------
   p <- nrow(sigma)
+  pthreshold <- pval_threshold
   if(is.null(threshold)) {
     if(pthreshold < 0 | pthreshold > 1) {
       stop("If a threshold is not provided, then pthreshold must be between 0 and 1!")

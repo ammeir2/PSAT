@@ -18,7 +18,7 @@
 #'
 #' @param threshold see \code{\link{mvnQuadratic}} for details.
 #'
-#' @param pthreshold see \code{\link{mvnQuadratic}} for details.
+#' @param pval_threshold see \code{\link{mvnQuadratic}} for details.
 #'
 #' @param estimate_type see \code{\link{mvnQuadratic}} for details.
 #'

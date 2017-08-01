@@ -12,15 +12,15 @@
 #' "Pearson" only for two-sided alternatives, if common directionality is expected
 #' for each feature.
 #'
-#' @param pthreshold The p-value selection threshold.
-#' If \code{pthreshold=NULL}, only the global null p-value is computed. Must be
+#' @param pval_threshold The p-value selection threshold.
+#' If \code{pval_threshold=NULL}, only the global null p-value is computed. Must be
 #' entered for computation of the conditional p-values. Either a scalar, or a vector
 #' of length M with positive entries. See Details.
 #'
 #' @return List containing the global null p-value in \code{pF},  and the
 #' conditional p-values in \code{p2C}. If a global null p-value is above
 #' the threshold, then the conditional p-value vector corresponding to it is
-#' a vector of NA's; if \code{pthreshold=NULL}, then the conditional p-value matrix
+#' a vector of NA's; if \code{pval_threshold=NULL}, then the conditional p-value matrix
 #' P2C is NA's.
 #'
 #' @details The Fisher test statisic is minus two times the sum of the log of
@@ -40,11 +40,11 @@
 #' post-selection inference using these tests, and about extensions to other
 #' global tests.
 #'
-#' The p-value threshold, pthreshold, is the threshold that the global null
+#' The p-value threshold, pval_threshold, is the threshold that the global null
 #' p-value has to reach in order to be selected for post-selection inference.
 #' For example,  for a bonferroni correction at level \code{alpha} for a family
 #' of \code{m} global null hypotheses, it should be set to \code{alpha/m}. The
-#' conditional p-values are computed only if \code{pF<=pthreshold}.
+#' conditional p-values are computed only if \code{pF<=pval_threshold}.
 #'
 #' @references Ruth Heller, Nilanjan Chatterjee, Abba Krieger, Jianxin Shi
 #' (2016). Post-selection Inference Following Aggregate Level Hypothesis
@@ -52,7 +52,7 @@
 #' \url{http://dx.doi.org/10.1101/058404}
 #'
 #' @example vignettes/aggregatePvalExamples.R
-aggregatePvalues <- function(pmat, globaltest = c("Fisher", "Pearson"), pthreshold = NULL){
+aggregatePvalues <- function(pmat, globaltest = c("Fisher", "Pearson"), pval_threshold = NULL){
 
   if(sum(is.na(pmat)) > 0){
     warning("NAs in the conditional pvalue compuations")
@@ -63,8 +63,8 @@ aggregatePvalues <- function(pmat, globaltest = c("Fisher", "Pearson"), pthresho
   globaltest <- globaltest[1]
 
   M = dim(pmat)[1]
-  if(length(pthreshold) == 1) {
-    pthreshold <- rep(pthreshold, M)
+  if(length(pval_threshold) == 1) {
+    pval_threshold <- rep(pval_threshold, M)
   }
 
 
@@ -85,11 +85,11 @@ aggregatePvalues <- function(pmat, globaltest = c("Fisher", "Pearson"), pthresho
       if(globaltest == "Fisher") {
         tp <- -2 * log(p)
         pF[i] <- 1 - pchisq(sum(tp), 2 * n)
-        if(!is.null(pthreshold)) {
-          if(length(pthreshold) < M) {
+        if(!is.null(pval_threshold)) {
+          if(length(pval_threshold) < M) {
             stop("threshold t for post-selection computation does not match the number of rows in pmat")
           }
-          t <- qchisq(1-pthreshold[i], 2*n)
+          t <- qchisq(1-pval_threshold[i], 2*n)
 
           if(sum(tp) >= t){
             p2c <- rep(NA, n)
@@ -105,7 +105,7 @@ aggregatePvalues <- function(pmat, globaltest = c("Fisher", "Pearson"), pthresho
               p2C[i, whichNotNA] <- p2c
             }
           }#end    if ( sum(tp)>=t)
-        }#end    if (!is.null(pthreshold))
+        }#end    if (!is.null(pval_threshold))
       }# end if (globaltest=="Fisher")
 
 
@@ -117,11 +117,11 @@ aggregatePvalues <- function(pmat, globaltest = c("Fisher", "Pearson"), pthresho
         QC <- max(QL, QR)
         pF[i] <- 2 * (1 - pchisq(QC, 2 * n))
 
-        if(!is.null(pthreshold)) {
-          if(length(pthreshold) < M) {
+        if(!is.null(pval_threshold)) {
+          if(length(pval_threshold) < M) {
             stop("threshold t for post-selection computation does not match the number of rows in pmat")
           }
-          t <-  qchisq(1 - pthreshold[i] / 2, 2 * n)
+          t <-  qchisq(1 - pval_threshold[i] / 2, 2 * n)
           if(QC >= t){
             p2c <- rep(NA, n)
             numc <- rep(NA, n)
@@ -144,7 +144,7 @@ aggregatePvalues <- function(pmat, globaltest = c("Fisher", "Pearson"), pthresho
             }#for
             p2C[i, whichNotNA] <- p2c
           }#end if (QC>=t)
-        }#end if (!is.null(pthreshold))
+        }#end if (!is.null(pval_threshold))
       }# end if (globaltest=="Pearson")
     }# end if (n>0)
   }#end for (i in 1:M)

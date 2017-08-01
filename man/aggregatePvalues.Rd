@@ -5,7 +5,7 @@
 \title{Post Selection with Aggregate Testing for Independent P-Values}
 \usage{
 aggregatePvalues(pmat, globaltest = c("Fisher", "Pearson"),
-  pthreshold = NULL)
+  pval_threshold = NULL)
 }
 \arguments{
 \item{pmat}{An \code{MXn} matrix of original p-values , where \code{M} is
@@ -17,8 +17,8 @@ be one-sided p-values. No default.}
 "Pearson" only for two-sided alternatives, if common directionality is expected
 for each feature.}
 
-\item{pthreshold}{The p-value selection threshold.
-If \code{pthreshold=NULL}, only the global null p-value is computed. Must be
+\item{pval_threshold}{The p-value selection threshold.
+If \code{pval_threshold=NULL}, only the global null p-value is computed. Must be
 entered for computation of the conditional p-values. Either a scalar, or a vector
 of length M with positive entries. See Details.}
 }
@@ -26,7 +26,7 @@ of length M with positive entries. See Details.}
 List containing the global null p-value in \code{pF},  and the
 conditional p-values in \code{p2C}. If a global null p-value is above
 the threshold, then the conditional p-value vector corresponding to it is
-a vector of NA's; if \code{pthreshold=NULL}, then the conditional p-value matrix
+a vector of NA's; if \code{pval_threshold=NULL}, then the conditional p-value matrix
 P2C is NA's.
 }
 \description{
@@ -51,11 +51,11 @@ See Heller et al. (2016) for details about these global tests, about the
 post-selection inference using these tests, and about extensions to other
 global tests.
 
-The p-value threshold, pthreshold, is the threshold that the global null
+The p-value threshold, pval_threshold, is the threshold that the global null
 p-value has to reach in order to be selected for post-selection inference.
 For example,  for a bonferroni correction at level \code{alpha} for a family
 of \code{m} global null hypotheses, it should be set to \code{alpha/m}. The
-conditional p-values are computed only if \code{pF<=pthreshold}.
+conditional p-values are computed only if \code{pF<=pval_threshold}.
 }
 \examples{
 set.seed(123)
@@ -65,7 +65,7 @@ pmat2sided = 2*pmin(pmat1sided, 1-pmat1sided) #two-sided p-values
 
 #compute the one-sided Fisher global null p-value and the conditional p-values given that Fisher's
 # global null p-value is at most 0.001
-out.Fisher= conditional.pvalues(pmat1sided, globaltest = "Fisher", pthreshold=0.001)
+out.Fisher= aggregatePvalues(pmat1sided, globaltest = "Fisher", pval_threshold=0.001)
 print(out.Fisher)
 
 #plot the original p-values, and the conditional p-values after global null selection by Fisher,
@@ -80,7 +80,7 @@ abline(-log10(0.05/20),0,lty=2, col="gray")
 
 #compute the two-sided Fisher global null p-value and the conditional p-values given that Fisher's
 # global null p-value is at most 0.001
-out.Fisher= conditional.pvalues(pmat2sided, globaltest = "Fisher", pthreshold=0.001)
+out.Fisher= aggregatePvalues(pmat2sided, globaltest = "Fisher", pval_threshold=0.001)
 print(out.Fisher)
 
 #plot the original p-values, and the conditional p-values after global null selection by Fisher,
@@ -96,7 +96,7 @@ abline(-log10(0.05/20),0,lty=2, col="gray")
 
 #compute the Pearson global null p-value and the conditional p-values given that Pearson's
 # global null p-value is at most 0.001
-out.Pearson = conditional.pvalues(pmat1sided, globaltest = "Pearson", pthreshold=0.001)
+out.Pearson = aggregatePvalues(pmat1sided, globaltest = "Pearson", pval_threshold=0.001)
 print(out.Pearson)
 
 #plot the original p-values, and the conditional p-values after global null selection by Pearson,

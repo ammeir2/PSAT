@@ -25,6 +25,8 @@ intercept.}
 
 \item{threshold}{see \code{\link{mvnQuadratic}} for details.}
 
+\item{pval_threshold}{see \code{\link{mvnQuadratic}} for details.}
+
 \item{estimate_type}{see \code{\link{mvnQuadratic}} for details.}
 
 \item{pvalue_type}{see \code{\link{mvnQuadratic}} for details.}
@@ -36,8 +38,6 @@ intercept.}
 \item{nSamples}{see \code{\link{mvnQuadratic}} for details.}
 
 \item{verbose}{see \code{\link{mvnQuadratic}} for details.}
-
-\item{pthreshold}{see \code{\link{mvnQuadratic}} for details.}
 
 \item{switch_tune}{see \code{\link{mvnQuadratic}} for details.}
 }

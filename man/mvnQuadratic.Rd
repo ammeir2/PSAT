@@ -20,6 +20,9 @@ mvnQuadratic(y, sigma, testMat = "wald", threshold = NULL,
 
 \item{threshold}{the threshold \eqn{c > 0} used in the aggregate test.}
 
+\item{pval_threshold}{the signficance level of the aggregate test.
+Overrided by \code{threshold} if both are provided.}
+
 \item{estimate_type}{the types of point estimates to compute and report. The first
 estimator listed will be reported by defaults.}
 
@@ -39,9 +42,6 @@ This only applies if the \code{global-null}, \code{switch} or \code{hybrid} opti
 are specified.}
 
 \item{verbose}{whether to report the progress of the computation.}
-
-\item{pthreshold}{the signficance level of the aggregate test.
-Overrided by \code{threshold} if both are provided.}
 }
 \value{
 An object of class \code{mvnQuadratic}.
@@ -69,7 +69,7 @@ computation is performed via an efficient line-search method. Otherwise, a
 stochastic gradient method is used.
 
 The \code{threshold} parameter specifies the constant \eqn{c>0} which is used
-to threshold the aggregate test. It takes precedence over \code{pthreshold} if both
+to threshold the aggregate test. It takes precedence over \code{pval_threshold} if both
 are specified. We use the \code{\link[CompQuadForm]{liu}} function to compute the the
 threshold if a non-Wald test is used.
 
@@ -87,7 +87,7 @@ confidence intervals ("switch") serving a simialr purpose as the "hybrid" method
 
 The \code{switchTune} field is used to specifiy how the Regime Switching confidence
 intervals should be used. Let \eqn{t1} be the quantile of the aggregate test used for
-screening (\code{pthreshold}) and let \eqn{\alpha} equal one minus \code{confidence_level}.
+screening (\code{pval_threshold}) and let \eqn{\alpha} equal one minus \code{confidence_level}.
 The regime switching confidence intervals work by performing a secondary aggregate test at
 at a quantile \eqn{\gamma} and if the second test is rejected then unadjusted confidence
 intervals at a level \eqn{1 - \alpha} are reporeted. If the second test is not rejected

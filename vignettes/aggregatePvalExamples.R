@@ -5,7 +5,7 @@ pmat2sided = 2*pmin(pmat1sided, 1-pmat1sided) #two-sided p-values
 
 #compute the one-sided Fisher global null p-value and the conditional p-values given that Fisher's
 # global null p-value is at most 0.001
-out.Fisher= conditional.pvalues(pmat1sided, globaltest = "Fisher", pthreshold=0.001)
+out.Fisher= aggregatePvalues(pmat1sided, globaltest = "Fisher", pval_threshold=0.001)
 print(out.Fisher)
 
 #plot the original p-values, and the conditional p-values after global null selection by Fisher,
@@ -20,7 +20,7 @@ abline(-log10(0.05/20),0,lty=2, col="gray")
 
 #compute the two-sided Fisher global null p-value and the conditional p-values given that Fisher's
 # global null p-value is at most 0.001
-out.Fisher= conditional.pvalues(pmat2sided, globaltest = "Fisher", pthreshold=0.001)
+out.Fisher= aggregatePvalues(pmat2sided, globaltest = "Fisher", pval_threshold=0.001)
 print(out.Fisher)
 
 #plot the original p-values, and the conditional p-values after global null selection by Fisher,
@@ -36,7 +36,7 @@ abline(-log10(0.05/20),0,lty=2, col="gray")
 
 #compute the Pearson global null p-value and the conditional p-values given that Pearson's
 # global null p-value is at most 0.001
-out.Pearson = conditional.pvalues(pmat1sided, globaltest = "Pearson", pthreshold=0.001)
+out.Pearson = aggregatePvalues(pmat1sided, globaltest = "Pearson", pval_threshold=0.001)
 print(out.Pearson)
 
 #plot the original p-values, and the conditional p-values after global null selection by Pearson,

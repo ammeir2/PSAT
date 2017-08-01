@@ -33,7 +33,7 @@ set.seed(123)
 The one-sided Figher global null p-value and conditional p-values given that Fisher's global null p-value is at most 0.001 are computed using the function `aggregatePvalues` as follows. Note that if a feature (row) has global null p-value above the selection threshold, the conditional p-values are set as NA's. 
 ```{r,eval = TRUE, fig.width=6, fig.align='center',echo=T}
 
-  out.Fisher= aggregatePvalues(pmat1sided, globaltest = "Fisher", pthreshold=0.001)
+  out.Fisher= aggregatePvalues(pmat1sided, globaltest = "Fisher", pval_threshold=0.001)
   print(out.Fisher)
   
   #plot the original p-values, and the conditional p-values after global null selection by Fisher, 
@@ -44,17 +44,12 @@ The one-sided Figher global null p-value and conditional p-values given that Fis
   points(seq(1:20), -log10(out.Fisher$p2C[1,]), pch = 2)
   legend(12,8, c("original",  "cond Fisher"), pch = c(1,2), col=c("red", "black"))
   abline(-log10(0.05/20),0,lty=2, col="gray")
-
-
-
 ```
-
-
 
 The two-sided Fisher global null p-value and conditional p-values given that two-sided Fisher's global null p-value is at most 0.001 are computed using the function `aggregatePvalues` as follows. 
 ```{r,eval = TRUE, fig.width=6, fig.align='center',echo=T}
 
-  out.Fisher= aggregatePvalues(pmat2sided, globaltest = "Fisher", pthreshold=0.001)
+  out.Fisher= aggregatePvalues(pmat2sided, globaltest = "Fisher", pval_threshold=0.001)
   print(out.Fisher)
   
   #plot the original p-values, and the conditional p-values after global null selection by Fisher,
@@ -74,7 +69,7 @@ The two-sided Fisher global null p-value and conditional p-values given that two
 The Pearson global null p-value and conditional p-values given that Pearson's global null p-value is at most 0.001 are computed using the function `aggregatePvalues` as follows. 
 ```{r,eval = TRUE, fig.width=6, fig.align='center',echo=T}
 
-  out.Pearson = aggregatePvalues(pmat1sided, globaltest = "Pearson", pthreshold=0.001)
+  out.Pearson = aggregatePvalues(pmat1sided, globaltest = "Pearson", pval_threshold=0.001)
   print(out.Pearson)
 
   #plot the original p-values, and the conditional p-values after global null selection by Pearson, 
