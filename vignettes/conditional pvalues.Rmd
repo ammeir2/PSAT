@@ -3,8 +3,8 @@ title: "P-values post Selection by Aggregate Testing (PSAT)"
 author: "Ruth Heller"
 date: "2017 - 02 - 23"
 output:
-  pdf_document: default
   html_document: default
+  pdf_document: default
 vignette: |
   %\VignetteIndexEntry{Vignette Title} %\VignetteEngine{knitr::rmarkdown} %\VignetteEncoding{UTF-8}
 ---
@@ -33,7 +33,7 @@ set.seed(123)
 The one-sided Figher global null p-value and conditional p-values given that Fisher's global null p-value is at most 0.001 are computed using the function `aggregatePvalues` as follows. Note that if a feature (row) has global null p-value above the selection threshold, the conditional p-values are set as NA's. 
 ```{r,eval = TRUE, fig.width=6, fig.align='center',echo=T}
 
-  out.Fisher= aggregatePvalues(pmat1sided, globaltest = "Fisher", pv.threshold=0.001)
+  out.Fisher= aggregatePvalues(pmat1sided, globaltest = "Fisher", pthreshold=0.001)
   print(out.Fisher)
   
   #plot the original p-values, and the conditional p-values after global null selection by Fisher, 
@@ -54,7 +54,7 @@ The one-sided Figher global null p-value and conditional p-values given that Fis
 The two-sided Fisher global null p-value and conditional p-values given that two-sided Fisher's global null p-value is at most 0.001 are computed using the function `aggregatePvalues` as follows. 
 ```{r,eval = TRUE, fig.width=6, fig.align='center',echo=T}
 
-  out.Fisher= aggregatePvalues(pmat2sided, globaltest = "Fisher", pv.threshold=0.001)
+  out.Fisher= aggregatePvalues(pmat2sided, globaltest = "Fisher", pthreshold=0.001)
   print(out.Fisher)
   
   #plot the original p-values, and the conditional p-values after global null selection by Fisher,
@@ -74,7 +74,7 @@ The two-sided Fisher global null p-value and conditional p-values given that two
 The Pearson global null p-value and conditional p-values given that Pearson's global null p-value is at most 0.001 are computed using the function `aggregatePvalues` as follows. 
 ```{r,eval = TRUE, fig.width=6, fig.align='center',echo=T}
 
-  out.Pearson = aggregatePvalues(pmat1sided, globaltest = "Pearson", pv.threshold=0.001)
+  out.Pearson = aggregatePvalues(pmat1sided, globaltest = "Pearson", pthreshold=0.001)
   print(out.Pearson)
 
   #plot the original p-values, and the conditional p-values after global null selection by Pearson, 

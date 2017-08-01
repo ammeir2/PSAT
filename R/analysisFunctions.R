@@ -120,6 +120,22 @@ getCI <- function(object, type = NULL, confidence_level = NULL, switchTune = NUL
   stop("Unsupported CI type!")
 }
 
+#' Retrieve Selection Adjusted P-Values
+#'
+#' @description A function for retrieving selection adjusted p-values
+#' obtained after aggregate testing using the \code{\link{mvnQuadratic}}
+#' and \code{\link{glmQuadratic}} functions.
+#'
+#' @param object an object of class \code{\link{mvnQuadratic}} or
+#' \code{\link{glmQuadratic}}.
+#'
+#' @param type the type of p-value to compute, see the
+#' the documentation of \code{\link{mvnQuadratic}} for details. If left
+#' \code{NULL} then the first listed value in the \code{pvalue_type} field in
+#' the original function call will be returned.
+#'
+#' @return a vector of p-values for the normal means/regression
+#' coefficients.
 getPval <- function(object, type = NULL) {
   # If aggregate pvalues --------------
   if(class(object) == "aggregatePvalues") {
@@ -192,6 +208,19 @@ getPval <- function(object, type = NULL) {
   stop("Unsupported pvalue type!")
 }
 
+#' Retrieve Parameter Estimates from an mvnQuadratic Fit
+#'
+#' @description Retrieve parameter estimates from an
+#' \code{\link{mvnQuadratic}} fit.
+#'
+#' @param object a \code{\link{mvnQuadratic}} object.
+#'
+#' @param type the type of estimates to return, should be
+#' set to to either "mle" or "naive". If left \code{NULL} then
+#' the "mle" will be returned.
+#'
+#' @return An estimate of the mean parameter of the normal
+#' distribution.
 coef.mvnQuadratic <- function(object, type = NULL) {
   if(is.null(type)) {
     return(object$muhat)
@@ -212,6 +241,19 @@ coef.mvnQuadratic <- function(object, type = NULL) {
   stop("Unsupported estimate type!")
 }
 
+#' Retrieve Coefficient Estimates from a glmQuadratic Fit
+#'
+#' @description Retrieve coefficients estimates from a
+#' \code{\link{glmQuadratic}} fit.
+#'
+#' @param object a \code{\link{glmQuadratic}} object.
+#'
+#' @param type the type of estimates to return, should be
+#' set to to either "mle" or "naive". If left \code{NULL} then
+#' the "mle" will be returned.
+#'
+#' @return An estimate of the regression coefficients of the
+#' generalized linear model.
 coef.glmQuadratic <- function(object, type = NULL) {
   if(is.null(type)) {
     return(object$betahat)
@@ -236,6 +278,21 @@ predict.mvnQuadratic <- function(object) {
   return(object$muhat)
 }
 
+#' Retrieve Linear Predictors from a glmQuadratic Fit
+#'
+#' @description Retrieve the linear predictor from a glmQuadratic
+#' fit. This is the same as the \code{type = "link"} option in
+#' \code{\link[stats]{predict.glm}}.
+#'
+#' @param object a \code{\link{glmQuadratic}} object.
+#'
+#' @param newX a new matrix of covariates. If left \code{NULL} the
+#'  linear predictors for the data used for fitting the model will be
+#'  returned.
+#'
+#' @return A vector of linear predictors.
+#'
+#' @seealso \code{\link{glmQuadratic}}
 predict.glmQuadratic <- function(object, newX = NULL) {
   if(is.null(newX)) {
     X <- object$X
@@ -247,6 +304,30 @@ predict.glmQuadratic <- function(object, newX = NULL) {
   return(as.numeric(X %*% object$betahat))
 }
 
+#' Summarizing glmQuadratic Fits
+#'
+#' @description A summary method for \code{\link{glmQuadratic}} objects.
+#'
+#' @param object an object of type \code{\link{glmQuadratic}}.
+#'
+#' @param estimate_type see \code{\link{mvnQuadratic}} for details.
+#'
+#' @param pvalue_type see \code{\link{mvnQuadratic}} for details.
+#'
+#' @param ci_type see \code{\link{mvnQuadratic}} for details.
+#'
+#' @param confidence_level see \code{\link{mvnQuadratic}} for details.
+#'
+#' @details This is a summary method for summarizing the results of
+#' post aggregate testing analysis with the \code{\link{glmQuadratic}}
+#' method. The main output of the function is a table regression coefficients
+#' with confidence intervals and p-values computed using the desired methods.
+#' This function is accompanied by a convenient printing function.
+#'
+#' @return A list contained a table of regression coefficients and details
+#' regarding the methods used.
+#'
+#' @seealso \code{\link{glmQuadratic}}
 summary.glmQuadratic <- function(object, estimate_type = NULL, pvalue_type = NULL,
                                  ci_type = NULL, confidence_level = NULL) {
   est <- coef(object, type = estimate_type)

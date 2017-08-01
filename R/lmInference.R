@@ -70,22 +70,20 @@ glmQuadratic <- function(X, y, testMat = "wald", family = "gaussian",
 
   naivefit <- glm(y ~ X, family = family)
   naiveBeta <- coef(naivefit)[-1]
-  sigma <- vcov(naivefit)[-1, , drop = FALSE][, -1, drop = FALSE]
 
   resid_sd <- resid_sd[1]
   if(is.character(resid_sd)) {
     if(resid_sd == "null") {
-      ysd <- sd(y)
+      nullfit <- glm(y ~ 1, family = family)
+      w <- vcov(nullfit) * length(y)
+      sigma <- solve(t(X) %*% X) * w
     } else if(resid_sd == "naive") {
-      ysd <- sd(naivefit$residuals)
+      sigma <- vcov(naivefit)[-1, , drop = FALSE][, -1, drop = FALSE]
     } else {
       stop("Variance estimation method not supported!")
     }
   }
 
-  if(family == "gaussian") {
-    sigma <- sigma * ysd^2 / var(naivefit$residuals)
-  }
 
   mvnfit <- mvnQuadratic(naiveBeta, sigma, testMat = testMat,
                          threshold = threshold, pval_threshold = pval_threshold,

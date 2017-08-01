@@ -172,7 +172,7 @@ Performing inference and plotting estimates:
 
 ```{r, cache = TRUE}
 glmfit <- glmQuadratic(X, y, testMat = testmat, family = "binomial",
-                       resid_sd = c("ysd", "naive"),
+                       resid_sd = c("naive", "null"),
                        threshold = NULL, pval_threshold = pthreshold,
                        estimate_type = c("mle", "naive"),
                        pvalue_type = c("hybrid", "polyhedral", "naive", "global-null"),
