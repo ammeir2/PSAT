@@ -2,7 +2,7 @@
 #'
 #' @description An interface for plotting the results of a post-selection analysis
 #' following an aggregate test. At the moment, methods for plotting
-#' estimates and confidence intervals, p-values and stochastic gradietn solution
+#' estimates and confidence intervals, p-values and the stochastic gradient solution
 #' paths are implemented.
 #'
 #' @param object and object of class \code{mvnQuadratic} or \code{glmQuadratic}.
@@ -11,11 +11,11 @@
 #'
 #' @param ... additional arguments to be passed to plotting function.
 #'
-#' @details This functions serves as an interface for plotting the results
+#' @details This function serves as an interface for plotting the results
 #' of post aggregatet testing inference. The function calls the \code{\link{plotEstimates}}
 #' function for \code{type} "estimates", the \code{\link{plotSolutionPath}} method for
 #' \code{type} "solutionPath" and \code{\link{plotPvalues}} for \code{type} "p-values".
-#' See documentation for these functions for details regarding additional optional parameters.
+#' See the documentation of these functions for details regarding additional optional parameters.
 #'
 #' @return a \code{\link[ggplot2]{ggplot2}} figure.
 #'
@@ -59,7 +59,8 @@ plot.mvnQuadratic <- function(object, type = c("estimates", "solution-path", "p-
 #' analyses.
 #'
 #' @param true the true values of the estimated means or regression coefficients.
-#' Mostly useful for experiments with simulated data.
+#' Mostly useful for experiments with simulated data where the true parameter values
+#' are known.
 #'
 #' @param threshold a vector of thresholds to be plotted along with the p-values.
 #'

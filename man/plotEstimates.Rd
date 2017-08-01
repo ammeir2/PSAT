@@ -14,7 +14,8 @@ plotPvalues(object, threshold = 0.1, adjust = "bonferroni")
 }
 \arguments{
 \item{true}{the true values of the estimated means or regression coefficients.
-Mostly useful for experiments with simulated data.}
+Mostly useful for experiments with simulated data where the true parameter values
+are known.}
 
 \item{threshold}{a vector of thresholds to be plotted along with the p-values.}
 

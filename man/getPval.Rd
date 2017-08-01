@@ -7,8 +7,8 @@
 getPval(object, type = NULL)
 }
 \arguments{
-\item{object}{an object of class \code{\link{mvnQuadratic}} or
-\code{\link{glmQuadratic}}.}
+\item{object}{an object of class \code{\link{mvnQuadratic}},
+\code{\link{glmQuadratic}}, or \code{\link{aggregatePvalues}}.}
 
 \item{type}{the type of p-value to compute, see the
 the documentation of \code{\link{mvnQuadratic}} for details. If left
@@ -16,11 +16,10 @@ the documentation of \code{\link{mvnQuadratic}} for details. If left
 the original function call will be returned.}
 }
 \value{
-a vector of p-values for the normal means/regression
-coefficients.
+a vector of p-values.
 }
 \description{
 A function for retrieving selection adjusted p-values
-obtained after aggregate testing using the \code{\link{mvnQuadratic}}
-and \code{\link{glmQuadratic}} functions.
+obtained after aggregate testing using the \code{\link{mvnQuadratic}},
+\code{\link{glmQuadratic}} or \code{\link{aggregatePvalues}} functions.
 }

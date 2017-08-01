@@ -19,8 +19,8 @@
 \item{confidence_level}{see \code{\link{mvnQuadratic}} for details.}
 }
 \value{
-A list contained a table of regression coefficients and details
-regarding the methods used.
+A list containing a table of regression coefficients and details
+regarding the inference methods used.
 }
 \description{
 A summary method for \code{\link{glmQuadratic}} objects.
@@ -28,7 +28,7 @@ A summary method for \code{\link{glmQuadratic}} objects.
 \details{
 This is a summary method for summarizing the results of
 post aggregate testing analysis with the \code{\link{glmQuadratic}}
-method. The main output of the function is a table regression coefficients
+method. The main output of the function is a table of regression coefficients
 with confidence intervals and p-values computed using the desired methods.
 This function is accompanied by a convenient printing function.
 }

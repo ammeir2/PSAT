@@ -20,15 +20,15 @@ a \code{\link[ggplot2]{ggplot2}} figure.
 \description{
 An interface for plotting the results of a post-selection analysis
 following an aggregate test. At the moment, methods for plotting
-estimates and confidence intervals, p-values and stochastic gradietn solution
+estimates and confidence intervals, p-values and the stochastic gradient solution
 paths are implemented.
 }
 \details{
-This functions serves as an interface for plotting the results
+This function serves as an interface for plotting the results
 of post aggregatet testing inference. The function calls the \code{\link{plotEstimates}}
 function for \code{type} "estimates", the \code{\link{plotSolutionPath}} method for
 \code{type} "solutionPath" and \code{\link{plotPvalues}} for \code{type} "p-values".
-See documentation for these functions for details regarding additional optional parameters.
+See the documentation of these functions for details regarding additional optional parameters.
 }
 \seealso{
 \code{\link{mvnQuadratic}}, \code{\link{glmQuadratic}},

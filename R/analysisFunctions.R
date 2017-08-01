@@ -2,7 +2,7 @@
 #'
 #' @description A function for retrieving selection adjusted confidence intervals
 #' obtained after aggregate testing using the \code{\link{mvnQuadratic}}
-#' and \code{\link{glmQuadratic}} functions.
+#' or \code{\link{glmQuadratic}} functions.
 #'
 #' @param object an object of class \code{\link{mvnQuadratic}} or
 #' \code{\link{glmQuadratic}}.
@@ -123,19 +123,19 @@ getCI <- function(object, type = NULL, confidence_level = NULL, switchTune = NUL
 #' Retrieve Selection Adjusted P-Values
 #'
 #' @description A function for retrieving selection adjusted p-values
-#' obtained after aggregate testing using the \code{\link{mvnQuadratic}}
-#' and \code{\link{glmQuadratic}} functions.
+#' obtained after aggregate testing using the \code{\link{mvnQuadratic}},
+#' \code{\link{glmQuadratic}} or \code{\link{aggregatePvalues}} functions.
 #'
-#' @param object an object of class \code{\link{mvnQuadratic}} or
-#' \code{\link{glmQuadratic}}.
+#' @param object an object of class \code{\link{mvnQuadratic}},
+#' \code{\link{glmQuadratic}}, or \code{\link{aggregatePvalues}}.
 #'
 #' @param type the type of p-value to compute, see the
 #' the documentation of \code{\link{mvnQuadratic}} for details. If left
 #' \code{NULL} then the first listed value in the \code{pvalue_type} field in
 #' the original function call will be returned.
 #'
-#' @return a vector of p-values for the normal means/regression
-#' coefficients.
+#' @return a vector of p-values.
+#'
 getPval <- function(object, type = NULL) {
   # If aggregate pvalues --------------
   if(class(object) == "aggregatePvalues") {
@@ -217,7 +217,7 @@ getPval <- function(object, type = NULL) {
 #'
 #' @param type the type of estimates to return, should be
 #' set to to either "mle" or "naive". If left \code{NULL} then
-#' the "mle" will be returned.
+#' the mle will be returned.
 #'
 #' @return An estimate of the mean parameter of the normal
 #' distribution.
@@ -320,12 +320,12 @@ predict.glmQuadratic <- function(object, newX = NULL) {
 #'
 #' @details This is a summary method for summarizing the results of
 #' post aggregate testing analysis with the \code{\link{glmQuadratic}}
-#' method. The main output of the function is a table regression coefficients
+#' method. The main output of the function is a table of regression coefficients
 #' with confidence intervals and p-values computed using the desired methods.
 #' This function is accompanied by a convenient printing function.
 #'
-#' @return A list contained a table of regression coefficients and details
-#' regarding the methods used.
+#' @return A list containing a table of regression coefficients and details
+#' regarding the inference methods used.
 #'
 #' @seealso \code{\link{glmQuadratic}}
 summary.glmQuadratic <- function(object, estimate_type = NULL, pvalue_type = NULL,

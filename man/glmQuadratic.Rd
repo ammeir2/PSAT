@@ -54,14 +54,14 @@ where
 \code{glmQuadratic} is used to perform inference in generalized
 linear models that were selected via a single aggregate test. This
 function essentially works as a wrapper for \code{\link{mvnQuadratic}}. See the
-documentaiton of \code{\link{mvnQuadratic}} for details regrading the inference
-methods.
+documentation of \code{\link{mvnQuadratic}} for details regrading the
+available inference methods.
 
 The function works by fitting a regression model using the \code{\link[stats]{glm}}
-function. The covariance matrix is estimated based on the estimated model if
-\code{resid_sd} is set to "naive" or based on an intercept only model if
-\code{resid_sd} is set to "null". Once a model has been estimated, a quadratic test
-is performed based on the estimated covariance with the intercept removed
+function. If \code{resid_sd} is set to "naive" then the covariance matrix is estimated
+based on the initial model fit. If \code{resid_sd} is set to "null" then the covariance matrix
+will be estimated based on an intercept model. Once a model has been estimated, a
+quadratic test is performed based on the estimated covariance with the intercept removed
 and the vector of regression coefficients is passed to \code{\link{mvnQuadratic}}
 without the intercept.
 }

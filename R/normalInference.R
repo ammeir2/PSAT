@@ -16,15 +16,15 @@
 #' Overrided by \code{threshold} if both are provided.
 #'
 #' @param estimate_type the types of point estimates to compute and report. The first
-#' estimator listed will be reported by defaults.
+#' estimator listed will be used as the default method.
 #'
 #' @param pvalue_type a vector of methods with which to compute the p-values. The first
-#' method listed will be reported as default.
+#' method listed will be used as the default method.
 #'
 #' @param ci_type a vector of confidence interval computation methods to be used.
-#'  The first method listed will be reported by default.
+#'  The first method listed will be will be used as the default method.
 #'
-#' @param confidence_level the confidence level for the confidencei intervals.
+#' @param confidence_level the confidence level for constructing confidencei intervals.
 #'
 #' @param switchTune tuning method for computing the regime switching confidence
 #'  intervals
@@ -33,15 +33,15 @@
 #'  This only applies if the \code{global-null}, \code{switch} or \code{hybrid} options
 #'  are specified.
 #'
-#' @param verbose whether to report the progress of the computation.
+#' @param verbose whether to report on the progress of the computation.
 #'
-#' @details The function is used to perform inference of normal vect
+#' @details The function is used to perform inference for normal mean vectors
 #' that were selected based on a single quadratic aggregate test. To be exact, suppose
 #' that \eqn{y ~ N(\mu,\Sigma)} and that we are interested in estimating \eqn{\mu}
 #' only if we can determine that \eqn{\mu\neq 0} using an aggregate test of the form:
 #' \deqn{y' K y > c > 0} for some predetermined constant \eqn{c}. If \code{testMat} is set
 #' to the default value of "wald", then \eqn{K = \Sigma^{-1}}. If wald test is used, it is
-#' recommended to specify \code{testMat} as "wald" as this setting makes some of computations
+#' recommended to specify \code{testMat} as "wald" because this setting makes some of computations
 #' more efficient. Otherwise, \code{testMat} must be a positive definite matrix of an
 #' appropriate dimension.
 #'
@@ -59,13 +59,14 @@
 #' \code{mvnQuadratic} offers several options for computing p-values. The "global-null"
 #' method relies on comparing the magnitude of \eqn{y} to samples from the truncated
 #' global-null distribution. This method is powerful when \eqn{\mu} is sparse and its
-#' non-zero components are not very large. The "polyhedral" method is exact when the
+#' non-zero coordinates are not very large. The "polyhedral" method is exact when the
 #' observed data is approximately normal and is quite robust to model misspecification.
 #' It tends to be more powerful than the `global-null` method when the magnitude of
 #' \eqn{\mu} is large. The "hybrid" method combines the strengths of the "global-null"
 #' and "polyhedral" methods, possessing good power regardless of the sparsity or
-#' magnitude of \eqn{\mu}, but is not as robust to the misspecification of the distribution
-#' of \eqn{y} as the "polyhedral" method. The confidence interval methods are similar to the p-values ones, with the Regime switching
+#' magnitude of \eqn{\mu}. However it is less robust to the misspecification of the distribution
+#' of \eqn{y} than the "polyhedral" method. The confidence interval methods are similar to the p-values ones,
+#' with the Regime switching
 #' confidence intervals ("switch") serving a simialr purpose as the "hybrid" method.
 #'
 #' The \code{switchTune} field is used to specifiy how the Regime Switching confidence
@@ -73,13 +74,10 @@
 #' screening (\code{pval_threshold}) and let \eqn{\alpha} equal one minus \code{confidence_level}.
 #' The regime switching confidence intervals work by performing a secondary aggregate test at
 #' at a quantile \eqn{\gamma} and if the second test is rejected then unadjusted confidence
-#' intervals at a level \eqn{1 - \alpha} are reporeted. If the second test is not rejected
+#' intervals at a level \eqn{1 - \alpha} are reported. If the second test is not rejected
 #' then global-null confidence intervals at a level \eqn{1 - \alpha + \gamma} are reported.
 #' If \code{switchTune} is set to "sqrd" then \eqn{\gamma = t1 \alpha^{2}} and
 #' \eqn{\gamma = t1 \alpha/2} if \code{switchTune} is set to "half".
-#'
-#' They regime switching confidence intervals work by performing
-#' a secondary aggregate test at a level
 #'
 #' @return An object of class \code{mvnQuadratic}.
 #'

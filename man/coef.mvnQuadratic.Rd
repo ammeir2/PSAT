@@ -11,7 +11,7 @@
 
 \item{type}{the type of estimates to return, should be
 set to to either "mle" or "naive". If left \code{NULL} then
-the "mle" will be returned.}
+the mle will be returned.}
 }
 \value{
 An estimate of the mean parameter of the normal

@@ -25,7 +25,7 @@ coefficients.
 \description{
 A function for retrieving selection adjusted confidence intervals
 obtained after aggregate testing using the \code{\link{mvnQuadratic}}
-and \code{\link{glmQuadratic}} functions.
+or \code{\link{glmQuadratic}} functions.
 }
 \details{
 This function retrieves confidence intervals from a post-aggregate testing analysis.
