@@ -5,6 +5,10 @@ sampleQuadraticMVTcpp <- function(init, mean, precision, threshold, nSamples, bu
     .Call('PSAT_sampleQuadraticMVTcpp', PACKAGE = 'PSAT', init, mean, precision, threshold, nSamples, burnin, trim)
 }
 
+quadraticRobinsMonroe <- function(var, upper, alpha, observed, initU, threshold, sqrtTestMat, invSqrtTestMat, sampPrecision, stepSize, burnin, mhiters, rbIters) {
+    .Call('PSAT_quadraticRobinsMonroe', PACKAGE = 'PSAT', var, upper, alpha, observed, initU, threshold, sqrtTestMat, invSqrtTestMat, sampPrecision, stepSize, burnin, mhiters, rbIters)
+}
+
 sampleLogisticCpp <- function(y, X, Xy, Xp, probs, beta, intercept, testMat, threshold, nSamples, burnin, trim, returnY) {
     .Call('PSAT_sampleLogisticCpp', PACKAGE = 'PSAT', y, X, Xy, Xp, probs, beta, intercept, testMat, threshold, nSamples, burnin, trim, returnY)
 }

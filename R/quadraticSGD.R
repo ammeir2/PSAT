@@ -6,6 +6,8 @@ quadraticSGD <- function(y, sigma, precision, testmat, threshold,
 
   if(is.null(stepCoef)) {
     stepCoef <- 0.25 / sqrt(diag(sigma))
+  } else if(length(stepCoef) == 1) {
+    stepCoef <- stepCoef / sqrt(diag(sigma))
   }
 
   # Pre-processing test matrix ---------
@@ -41,6 +43,8 @@ quadraticSGD <- function(y, sigma, precision, testmat, threshold,
 
     # Updating estimate --------------
     itermu <- itermu + grad
+    itermu <- pmax(0, itermu * sign(y)) * sign(y)
+    itermu <- pmin(abs(y), abs(itermu)) * sign(y)
     solutionPath[i, ] <- itermu
     sampmat[i, ] <- lastsamp
   }

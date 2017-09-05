@@ -58,11 +58,12 @@ glmQuadratic <- function(X, y, testMat = "wald", family = "gaussian",
                          resid_sd = c("null", "naive"),
                          threshold = NULL, pval_threshold = 0.05,
                          estimate_type = c("mle", "naive"),
-                         pvalue_type = c("hybrid", "polyhedral", "naive", "global-null"),
-                         ci_type = c("switch", "polyhedral", "naive", "global-null"),
+                         pvalue_type = c("hybrid", "polyhedral", "naive"),
+                         ci_type = c("switch", "polyhedral", "naive"),
                          confidence_level = .95,
-                         switchTune = c("sqrd", "half"),
-                         nSamples = NULL, verbose = TRUE) {
+                         verbose = TRUE,
+                         control = postQuadraticControl()){
+
   family <- family[1]
   if(any(family %in% c("quasi", "quasibinomial", "quasipoisson"))) {
     warning("Overdispersed families are not explicity supported!")
@@ -76,7 +77,7 @@ glmQuadratic <- function(X, y, testMat = "wald", family = "gaussian",
     if(resid_sd == "null") {
       nullfit <- glm(y ~ 1, family = family)
       w <- vcov(nullfit) * length(y)
-      sigma <- solve(t(X) %*% X) * w
+      sigma <- solve(t(X) %*% X) * as.numeric(w)
     } else if(resid_sd == "naive") {
       sigma <- vcov(naivefit)[-1, , drop = FALSE][, -1, drop = FALSE]
     } else {
@@ -84,15 +85,13 @@ glmQuadratic <- function(X, y, testMat = "wald", family = "gaussian",
     }
   }
 
-
   mvnfit <- mvnQuadratic(naiveBeta, sigma, testMat = testMat,
                          threshold = threshold, pval_threshold = pval_threshold,
                          estimate_type = estimate_type,
                          pvalue_type = pvalue_type,
                          ci_type = ci_type,
                          confidence_level = confidence_level,
-                         switchTune = switchTune,
-                         nSamples = nSamples, verbose = verbose)
+                         verbose = verbose, control = control)
   results <- mvnfit
   results$y <- y
   results$X <- X

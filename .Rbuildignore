@@ -2,3 +2,6 @@
 ^\.Rproj\.user$
 tests/*
 figures/*
+mleExperiments/*
+data analysis/*
+simulations/*

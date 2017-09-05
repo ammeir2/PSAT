@@ -27,12 +27,16 @@ for some pre-determined threshold $c$. Then, we must account for the fact that w
 
 ```{r generateNormal, warning = FALSE, message = FALSE, cache = TRUE}
 # Tests for wald test ------------------------
-set.seed(123)
-p <- 6
-sparsity <- 1
-snr <- 2
-mu <- c(rep(snr / sparsity, sparsity), rep(0, p - sparsity))
-sigma <- cov2cor(clusterGeneration::genPositiveDefMat(p)$Sigma)
+set.seed(5)
+p <- 8
+sparsity <- 2
+snr <- 3
+mu <- rexp(sparsity) * (1 - 2 * rbinom(sparsity, 1, 0.5))
+mu <- mu / sum(abs(mu)) * snr
+mu <- c(mu, rep(0, p - sparsity))
+# sigma <- cov2cor(clusterGeneration::genPositiveDefMat(p)$Sigma)
+sigma <- matrix(0.3, nrow = p, ncol = p)
+diag(sigma) <- 1
 sqrtSig <- expm::sqrtm(sigma)
 testmat <- solve(sigma)
 
@@ -54,11 +58,10 @@ Our threshold is `r round(threshold, 1)` and the realized test statistic is `r r
 library(PSAT)
 allfit <- mvnQuadratic(y, sigma, testMat = "wald", threshold = NULL, pval_threshold = pthreshold,
                        estimate_type = c("mle", "naive"),
-                       pvalue_type = c("hybrid", "polyhedral", "naive", "global-null"),
-                       ci_type = c("switch", "polyhedral", "naive", "global-null"),
-                       confidence_level = .95,
-                       switchTune = c("sqrd", "half"),
-                       nSamples = NULL, verbose = TRUE)
+                       pvalue_type = c("hybrid", "polyhedral", "naive"),
+                       ci_type = c("switch", "polyhedral", "naive"),
+                       confidence_level = .95, verbose = TRUE,
+                       control = postQuadraticControl(trueHybrid = TRUE, rbIters = 5000, nSamples = 10^4))
 
 ```
 
@@ -100,7 +103,7 @@ The `getCI` function also allows to compute confidence intervals based on a diff
 # Original confidence interval:
 print(round(getCI(allfit, type = "switch"), 3))
 # Some more conservative confidence intervals:
-print(round(getCI(allfit, type = "switch", confidence_level = 0.01), 3))
+print(round(getCI(allfit, type = "switch", confidence_level = .99), 3))
 ```
 
 The `mvnQuadratic` function can also be used to perform inference for quadratic tests different than the Wald test. In such cases, the conditional MLE cannot be computed in closed and we resort to using a stochastic gradient method. To verify that stochastic gradient method indeed converges to the neighborhood of the MLE, in the next chunk we will perform inference on the same dataset as before but instead of telling the function that we are using a Wald test we will pass the inverse of the covariance matrix as a general test matrix.
@@ -109,14 +112,12 @@ The `mvnQuadratic` function can also be used to perform inference for quadratic 
 testmat <- solve(sigma)
 sgdfit <- mvnQuadratic(y, sigma, testMat = testmat, threshold = NULL, pval_threshold = pthreshold,
                        estimate_type = c("mle", "naive"),
-                       pvalue_type = c("polyhedral", "hybrid", "naive", "global-null"),
-                       ci_type = c("polyhedral", "switch", "naive", "global-null"),
-                       confidence_level = .95,
-                       switchTune = c("sqrd", "half"),
-                       nSamples = NULL, verbose = FALSE)
+                       pvalue_type = c("polyhedral", "hybrid", "naive"),
+                       ci_type = c("polyhedral", "switch", "naive"),
+                       confidence_level = .95, verbose = FALSE)
 ```
 
-Notice that the function has given us a warning that the Regime Switching confidnece intervals and Global-Null confidence intervals may be more conservative here, because we are unable to bootstrap the distribution of the MLE exactly. Next, let us evaluate the solution paths of the SGD algorithm:
+Next, let us evaluate the solution paths of the SGD algorithm:
 ```{r solutionpath, cache = TRUE}
 plot(sgdfit, type = "solution-path")
 ```
@@ -174,11 +175,10 @@ glmfit <- glmQuadratic(X, y, testMat = testmat, family = "binomial",
                        resid_sd = c("naive", "null"),
                        threshold = NULL, pval_threshold = pthreshold,
                        estimate_type = c("mle", "naive"),
-                       pvalue_type = c("hybrid", "polyhedral", "naive", "global-null"),
-                       ci_type = c("switch", "polyhedral", "naive", "global-null"),
-                       confidence_level = .95,
-                       switchTune = c("sqrd", "half"),
-                       nSamples = 4000, verbose = FALSE)
+                       pvalue_type = c("hybrid", "polyhedral", "naive"),
+                       ci_type = c("switch", "polyhedral", "naive"),
+                       confidence_level = .95, verbose = FALSE, 
+                       control = postQuadraticControl(trueHybrid = TRUE))
 ```
 
 ```{r}

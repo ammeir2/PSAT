@@ -70,7 +70,8 @@ plot.mvnQuadratic <- function(object, type = c("estimates", "solution-path", "p-
 #' @return A \code{\link[ggplot2]{ggplot2}} figure.
 #'
 #' @describeIn plotEstimates plots estimates and confidence intervals.
-plotEstimates <- function(object, true = NULL) {
+plotEstimates <- function(object, true = NULL, offset = 0.12) {
+  offsetMulti <- offset
   naive <- object$naiveMu
   p <- length(naive)
   mle <- object$mleMu
@@ -119,7 +120,7 @@ plotEstimates <- function(object, true = NULL) {
     plotdat <- rbind(plotdat, truedat)
   }
 
-  plotdat$variable <- plotdat$variable + plotdat$offset * 0.12
+  plotdat$variable <- plotdat$variable + plotdat$offset * offsetMulti
   ggplot(subset(plotdat, !is.na(ci_type))) +
     geom_segment(aes(x = variable, xend = variable,
                      y = lci, yend = uci, col = ci_type, linetype = ci_type)) +

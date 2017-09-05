@@ -24,25 +24,31 @@ polyhedral.workhorse <- function(eta, u, sigma, testMat, threshold,
 
   # Computing CI ----------------
   if(computeCI) {
-    llim <- theta
-    tempPval <- ptruncNorm(llim, theta, sqrt(etaSigma), lower, upper)
-    while(tempPval < 1 - alpha / 2) {
-      llim <- llim - sqrt(etaSigma) * 1
-      tempPval <- ptruncNorm(llim, theta, sqrt(etaSigma), lower, upper)
-    }
+    ci <- findPolyCIlimits(theta, etaSigma, lower, upper, alpha)
+  } else {
+    ci <- NULL
+  }
 
-    ulim <- theta
-    tempPval <- ptruncNorm(ulim, theta, sqrt(etaSigma), lower, upper)
-    while(tempPval > alpha / 2) {
-      ulim <- ulim + sqrt(etaSigma) * 0.1
-      tempPval <- ptruncNorm(ulim, theta, sqrt(etaSigma), lower, upper)
-    }
+  return(list(pval = etaPval, ci = ci, noCorrection = delta < 0))
+}
 
-    uci <- uniroot(f = function(x) ptruncNorm(x, theta, sqrt(etaSigma), lower, upper) - alpha / 2,
-                   interval = c(llim, ulim))$root
-    lci <- uniroot(f = function(x) ptruncNorm(x, theta, sqrt(etaSigma), lower, upper) - (1 - alpha / 2),
-                   interval = c(llim, ulim))$root
-    ci <- c(lci, uci)
+linearPolyhedral <- function(eta, u, sigma, a, threshold,
+                             computeCI = FALSE, alpha = 0.05) {
+  p <- length(u)
+  c <- as.numeric(t(eta) %*% sigma %*% eta)^-1 * sigma %*% eta
+  theta <- as.numeric(t(eta) %*% u)
+  w <- u - (c * theta)
+  theta <- t(eta) %*% u
+  lower <- as.numeric((threshold[1] - t(a) %*% w) / (t(a) %*% c))
+  upper <- as.numeric((threshold[2] - t(a) %*% w) / (t(a) %*% c))
+
+  etaSigma <- as.numeric(t(eta) %*% sigma %*% eta)
+  etaPval <- ptruncNorm(0, theta, sqrt(etaSigma), lower, upper)
+  etaPval <- 2 * min(etaPval, 1 - etaPval)
+
+  # Computing CI ----------------
+  if(computeCI) {
+    ci <- findPolyCIlimits(theta, etaSigma, lower, upper, alpha)
   } else {
     ci <- NULL
   }
@@ -50,7 +56,28 @@ polyhedral.workhorse <- function(eta, u, sigma, testMat, threshold,
   return(list(pval = etaPval, ci = ci))
 }
 
+findPolyCIlimits <- function(theta, etaSigma, lower, upper, alpha) {
+  llim <- theta
+  tempPval <- ptruncNorm(llim, theta, sqrt(etaSigma), lower, upper)
+  while(tempPval < 1 - alpha / 2) {
+    llim <- llim - sqrt(etaSigma) * 0.1
+    tempPval <- ptruncNorm(llim, theta, sqrt(etaSigma), lower, upper)
+  }
 
+  ulim <- theta
+  tempPval <- ptruncNorm(ulim, theta, sqrt(etaSigma), lower, upper)
+  while(tempPval > alpha / 2) {
+    ulim <- ulim + sqrt(etaSigma) * 0.1
+    tempPval <- ptruncNorm(ulim, theta, sqrt(etaSigma), lower, upper)
+  }
+
+  uci <- uniroot(f = function(x) ptruncNorm(x, theta, sqrt(etaSigma), lower, upper) - alpha / 2,
+                 interval = c(llim, ulim))$root
+  lci <- uniroot(f = function(x) ptruncNorm(x, theta, sqrt(etaSigma), lower, upper) - (1 - alpha / 2),
+                 interval = c(llim, ulim))$root
+  ci <- c(lci, uci)
+  return(ci)
+}
 
 ptruncNorm <- function(mu, x, sd, l, u) {
   if(l == u) {

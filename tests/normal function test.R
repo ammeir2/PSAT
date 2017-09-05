@@ -1,7 +1,7 @@
 # Tests for wald test ------------------------
 n <- 1
-p <- 6
-sparsity <- 2
+p <- 10
+sparsity <- 1
 snr <- 3
 mu <- c(rep(snr / sparsity, sparsity), rep(0, p - sparsity))
 sigma <- cov2cor(clusterGeneration::genPositiveDefMat(p)$Sigma)
@@ -21,8 +21,8 @@ while(testStat < threshold) {
 allfit <- mvnQuadratic(y, sigma, testMat = "wald", threshold = NULL, pval_threshold = pthreshold,
                        estimate_type = c("mle", "naive"),
                        pvalue_type = c("polyhedral", "hybrid", "naive", "global-null"),
-                       ci_type = c("polyhedral", "switch", "naive", "global-null"),
-                       confidence_level = 0.05,
+                       ci_type = c("polyhedral", "hybrid", "naive", "global-null"),
+                       confidence_level = 0.95,
                        switchTune = c("sqrd", "half"),
                        nSamples = NULL, verbose = TRUE)
 

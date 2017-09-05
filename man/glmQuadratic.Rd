@@ -7,9 +7,9 @@
 glmQuadratic(X, y, testMat = "wald", family = "gaussian",
   resid_sd = c("null", "naive"), threshold = NULL, pval_threshold = 0.05,
   estimate_type = c("mle", "naive"), pvalue_type = c("hybrid", "polyhedral",
-  "naive", "global-null"), ci_type = c("switch", "polyhedral", "naive",
-  "global-null"), confidence_level = 0.95, switchTune = c("sqrd", "half"),
-  nSamples = NULL, verbose = TRUE)
+  "naive"), ci_type = c("switch", "polyhedral", "naive"),
+  confidence_level = 0.95, verbose = TRUE,
+  control = postQuadraticControl())
 }
 \arguments{
 \item{X}{the design matrix of the regression model without an
@@ -35,11 +35,11 @@ intercept.}
 
 \item{confidence_level}{see \code{\link{mvnQuadratic}} for details.}
 
-\item{nSamples}{see \code{\link{mvnQuadratic}} for details.}
-
 \item{verbose}{see \code{\link{mvnQuadratic}} for details.}
 
 \item{switch_tune}{see \code{\link{mvnQuadratic}} for details.}
+
+\item{nSamples}{see \code{\link{mvnQuadratic}} for details.}
 }
 \value{
 an object of type \code{glmQuadrtic}

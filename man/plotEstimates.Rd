@@ -6,7 +6,7 @@
 \alias{plotPvalues}
 \title{Plotting Functions for Post Aggregate Testing Inference Results}
 \usage{
-plotEstimates(object, true = NULL)
+plotEstimates(object, true = NULL, offset = 0.12)
 
 plotSolutionPath(object)
 

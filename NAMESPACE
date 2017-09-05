@@ -2,9 +2,14 @@
 importFrom(Rcpp, sourceCpp)
 useDynLib(PSAT)
 
+export(quadraticRobinsMonroe)
+
 export(mvnQuadratic)
 export(glmQuadratic)
 export(aggregatePvalues)
+export(postQuadraticControl)
+export(sampleQuadraticConstraint)
+export(mvnLinear)
 
 export(getCI)
 export(getPval)
@@ -23,3 +28,4 @@ S3method(plot, glmQuadratic)
 S3method(print, glmQuadratic_summary)
 
 import(ggplot2)
+import(truncnorm)

@@ -6,10 +6,9 @@
 \usage{
 mvnQuadratic(y, sigma, testMat = "wald", threshold = NULL,
   pval_threshold = 0.05, estimate_type = c("mle", "naive"),
-  pvalue_type = c("hybrid", "polyhedral", "naive", "global-null"),
-  ci_type = c("switch", "polyhedral", "naive", "global-null"),
-  confidence_level = 0.95, switchTune = c("sqrd", "half"),
-  nSamples = NULL, verbose = TRUE)
+  pvalue_type = c("hybrid", "polyhedral", "naive"), ci_type = c("switch",
+  "polyhedral", "naive"), confidence_level = 0.95, verbose = TRUE,
+  control = postQuadraticControl())
 }
 \arguments{
 \item{y}{the observed normal vector.}
@@ -34,14 +33,14 @@ The first method listed will be will be used as the default method.}
 
 \item{confidence_level}{the confidence level for constructing confidencei intervals.}
 
+\item{verbose}{whether to report on the progress of the computation.}
+
 \item{switchTune}{tuning method for computing the regime switching confidence
 intervals}
 
 \item{nSamples}{number of samples to take from the truncated global null distribution.
 This only applies if the \code{global-null}, \code{switch} or \code{hybrid} options
 are specified.}
-
-\item{verbose}{whether to report on the progress of the computation.}
 }
 \value{
 An object of class \code{mvnQuadratic}.

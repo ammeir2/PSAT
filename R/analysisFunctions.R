@@ -39,18 +39,19 @@ getCI <- function(object, type = NULL, confidence_level = NULL, switchTune = NUL
     type <- type[1]
   }
 
-  if(is.null(switchTune)) {
-    switchTune <- object$switchTune
-  }
-
   if(is.null(confidence_level)) {
     confidence_level <- 1 - object$confidence_level
     recompute <- FALSE
-  } else if((1 - confidence_level) == object$confidence_level) {
+  } else if(confidence_level == object$confidence_level) {
     recompute <- FALSE
+    confidence_level <- 1 - confidence_level
   } else {
     recompute <- TRUE
     confidence_level <- 1 - confidence_level
+  }
+
+  if(is.null(switchTune)) {
+    switchTune <- confidence_level^2
   }
 
   # Polyhedral ----------
@@ -68,19 +69,15 @@ getCI <- function(object, type = NULL, confidence_level = NULL, switchTune = NUL
     if(switchTune != object$switchTune) {
       recompute <- TRUE
     }
-    if(is.null(object$nullDist)) {
-      stop("Please re-run fitting function with `switch` or `global-null` ci_type options.")
-    } else if(!recompute) {
+    if(!recompute & !is.null(object$switchCI)) {
       return(object$switchCI)
     } else {
-      if(confidence_level != object$confidence_level) {
-        naiveCI <- getNaiveCI(object$naiveMu, object$sigma, confidence_level)
-      } else {
-        naiveCI <- object$naiveCI
-      }
-      switch <- getSwitchCI(object$naiveMu, object$muhat, object$nullDist,
-                            object$testMat, switchTune, confidence_level,
-                            object$pthreshold, object$quadlam, naiveCI)
+      switch <- getSwitchCI(object$naiveMu, object$sigma,
+                            object$testMat, object$threshold,
+                            object$pthreshold, confidence_level,
+                            object$quadlam, t2 = switchTune * object$pthreshold,
+                            object$testStat, object$hybridPval,
+                            object$trueHybrid)
       return(switch)
     }
   }
@@ -97,11 +94,18 @@ getCI <- function(object, type = NULL, confidence_level = NULL, switchTune = NUL
   # Global Null -------------
   if(type == "global-null") {
     if(is.null(object$nullDist)) {
-      stop("Please re-run fitting function with `switch` or `global-null` ci_type options.")
-    } else if(!recompute) {
+      stop("Please re-run fitting function with `switch`, `global-null` or `hybrid' ci_type options.")
+    } else if(!recompute & !is.null(object$nullCI)) {
       return(object$nullCI)
     } else {
-      return(getNullCI(object$muhat, object$nullDist, confidence_level))
+      if(object$nullMethod == "zero-quantile") {
+        return(getNullCI(object$muhat, object$nullDist, confidence_level))
+      } else {
+        ci <- quadraticRB(object$naiveMu, object$sigma,
+                          object$testMat, object$threshold,
+                          confidence_level, computeFull = TRUE)
+        return(ci)
+      }
     }
   }
 
@@ -114,6 +118,19 @@ getCI <- function(object, type = NULL, confidence_level = NULL, switchTune = NUL
     } else {
       return(getMleCI(object$muhat, object$mleDist, confidence_level))
     }
+  }
+
+  if(type == "hybrid") {
+    if(!recompute & !is.null(object$hybridCI)) {
+      return(object$hybridCI)
+    } else {
+      ci <- getHybridCI(object$naiveMu, object$sigma,
+                        object$testMat, object$threshold,
+                        object$pthreshold, confidence_level,
+                        object$hybridPval, object$trueHybrid)
+      return(ci)
+    }
+
   }
 
   # Oopps --------
@@ -403,7 +420,7 @@ print.glmQuadratic_summary <- function(sum) {
   cat("Results for Post-Aggregate Testing Analysis \n \n")
   cat("Estimation Method: ", sum$estimate_type, "\n")
   cat("P-value Type: ", sum$pvalue_type, "\n")
-  cat("Confidence Interval Type: ", sum$ci_type, "      Confidence Level:", 1 - sum$confidence_level, "\n\n")
+  cat("Confidence Interval Type: ", sum$ci_type, "      Confidence Level:", sum$confidence_level, "\n\n")
   cat("Table of Coefficients:\n")
   coefs <- sum$coefficients
   coefs[, 1:3] <- round(coefs[, 1:3], 5)

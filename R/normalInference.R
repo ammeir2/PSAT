@@ -86,23 +86,36 @@
 mvnQuadratic <- function(y, sigma, testMat = "wald",
                          threshold = NULL, pval_threshold = 0.05,
                          estimate_type = c("mle", "naive"),
-                         pvalue_type = c("hybrid", "polyhedral", "naive", "global-null"),
-                         ci_type = c("switch", "polyhedral", "naive", "global-null"),
+                         pvalue_type = c("hybrid", "polyhedral", "naive"),
+                         ci_type = c("switch", "polyhedral", "naive"),
                          confidence_level = .95,
-                         switchTune = c("sqrd", "half"),
-                         nSamples = NULL, verbose = TRUE) {
+                         verbose = TRUE,
+                         control = postQuadraticControl()) {
+  # Getting control variables
+  if(class(control) != "quadratic_control") {
+    stop("control must be an object of class `quadratic_control'!")
+  }
+
+  switchTune <- control$switchTune
+  nullMethod <- control$nullMethod
+  nSamples <- control$nSamples
+  sgdStep <- control$sgdStep
+  nsteps <-  control$nsteps
+  trueHybrid <- control$trueHybrid
+  rbIters <- control$rbIters
+
   # Validating parameters --------------------
+  if(!(nullMethod %in% c("zero-quantile", "RB"))) {
+    stop("nullMethod must be either `zero-quantile' or `RB'!")
+  }
+
+  p <- length(y)
   if(!(any(estimate_type %in% c("mle", "naive")))) {
     stop("estimation method not supported!")
   }
 
-  if(!(any(pvalue_type %in% c("polyhedral", "hybrid", "global-null", "mle")))) {
-    stop("pvalue_type not supported!")
-  }
-
-  if(!(any(ci_type %in% c("polyhedral", "switch", "naive", "mle")))) {
-    stop("ci_type not supported!")
-  }
+  checkPvalues(pvalue_type)
+  checkCI(ci_type)
 
   if("mle" %in% ci_type & !("mle" %in% estimate_type)) {
     warning("Computing the conditional MLE is necessary for computing MLE based confidence intervals.")
@@ -135,14 +148,13 @@ mvnQuadratic <- function(y, sigma, testMat = "wald",
     stop("Dimension of sigma must match the dimesions of testMat!")
   }
 
-  if(confidence_level < 0 | confidence_level > 1) {
+  if(confidence_level <= 0 | confidence_level >= 1) {
     stop("confidence_level must be between 0 and 1!")
   }
   confidence_level <- 1 - confidence_level
 
-  switchTune <- switchTune[1]
-  if(!(switchTune %in% c("sqrd", "half"))) {
-    stop("Regime switching CI tuning parameter type not supported!")
+  if(is.null(switchTune)) {
+    switchTune <- confidence_level^2
   }
 
   # Setting threshold ----------------------------
@@ -150,13 +162,21 @@ mvnQuadratic <- function(y, sigma, testMat = "wald",
   pthreshold <- pval_threshold
   if(is.null(threshold)) {
     if(pthreshold < 0 | pthreshold > 1) {
-      stop("If a threshold is not provided, then pthreshold must be between 0 and 1!")
+      stop("If a threshold is not provided, then pval_threshold must be between 0 and 1!")
     } else {
       threshold <- getQuadraticThreshold(pthreshold, quadlam)
     }
   }
 
   pthreshold <- CompQuadForm::liu(threshold, quadlam)
+
+  y <- as.numeric(y)
+  testStat <- as.numeric(t(y) %*% testMat %*% y)
+  if(testStat < threshold) {
+    stop("Test statistic is below the threshold, model not selected!")
+  }
+
+  t2 <- switchTune * pthreshold
 
   # Computing the MLE ---------------------
   if(verbose) {
@@ -179,8 +199,8 @@ mvnQuadratic <- function(y, sigma, testMat = "wald",
       solutionPath <- NULL
     } else if(quadtest == "other") {
       sgdfit <- quadraticSGD(y, sigma, invcov, testMat, threshold,
-                             stepRate = 0.75, stepCoef = NULL,
-                             delay = 20, sgdSteps = 1000, assumeCovergence = 800,
+                             stepRate = 0.75, stepCoef = sgdStep,
+                             delay = 20, sgdSteps = nsteps, assumeCovergence = 800,
                              mhIters = 40)
       mleMu <- sgdfit$mle
       solutionPath <- sgdfit$solutionPath
@@ -198,11 +218,12 @@ mvnQuadratic <- function(y, sigma, testMat = "wald",
 
   # Sampling from the global-null ---------------------
   if(is.null(nSamples)) {
-    nSamples <- length(y) * 5 / confidence_level
+    nSamples <- round(length(y) * 5 / confidence_level)
     nSamples <- max(nSamples, 30 * length(y))
   }
 
-  if("global-null" %in% pvalue_type | "switch" %in% ci_type) {
+  if(any(c("global-null", "hybrid") %in% pvalue_type) |
+     (nullMethod == "zero-quantile")) {
     if(verbose) print(paste("Sampling from null distribution! (", nSamples, " samples)", sep = ""))
     nullMu <- rep(0, length(y))
     nullSample <- sampleQuadraticConstraint(nullMu, sigma,
@@ -264,9 +285,12 @@ mvnQuadratic <- function(y, sigma, testMat = "wald",
     }
 
     mleDist <- mleSample
-    for(i in 1:nrow(mleDist)) {
-      mleDist[i, ] <- mleDist[i, ] * mleLam[i] - muhat
-    }
+    mleDist <- apply(mleDist, 2, function(x) x - mean(x))
+    mleDist <- mleDist %*% solve(var(mleDist))
+    # for(i in 1:nrow(mleDist)) {
+    #   # mleDist[i, ] <- mleDist[i, ] * mleLam[i] - muhat
+    #   mleDist[i, ] <- mleDist[i, ] - muhat
+    # }
 
     mlePval <- numeric(p)
     for(i in 1:length(mlePval)) {
@@ -303,24 +327,31 @@ mvnQuadratic <- function(y, sigma, testMat = "wald",
   }
 
   # Null Distribution Based CIs ---------------
-  if(any(c("switch", "global-null") %in% ci_type)) {
-    if(p < 20 & quadtest == "wald") {
-      if(verbose) print("Bootstrapping the null-distribution of the MLE under the null!")
-      nullLam <- apply(nullSample, 1, function(x) optimize(conditionalDnorm, interval = c(0, 1),
-                                                           maximum = TRUE, y = x, precision = invcov,
-                                                           ncp = ncp, threshold = threshold)$maximum)
-    } else {
-      if(p < 20 & quadtest == "other") {
-        warning("Switching regime and null distirbution based CIs may be conservative for general qudaratic tests!")
+  if(("global-null" %in% ci_type)) {
+    if(nullMethod == "zero-quantile") {
+      if(p < 20 & quadtest == "wald") {
+        if(verbose) print("Bootstrapping the null-distribution of the MLE under the null!")
+        nullLam <- apply(nullSample, 1, function(x) optimize(conditionalDnorm, interval = c(0, 1),
+                                                             maximum = TRUE, y = x, precision = invcov,
+                                                             ncp = ncp, threshold = threshold)$maximum)
+      } else {
+        if(p < 20 & quadtest == "other") {
+          warning("Switching regime and null distirbution based CIs may be conservative for general qudaratic tests!")
+        }
+        nullLam <- rep(1, nrow(nullSample))
       }
-      nullLam <- rep(1, nrow(nullSample))
-    }
 
-    nullDist <- nullSample
-    for(i in 1:nrow(nullDist)) {
-      nullDist[i, ] <- nullDist[i, ] * nullLam[i]
+      nullDist <- nullSample
+      for(i in 1:nrow(nullDist)) {
+        nullDist[i, ] <- nullDist[i, ] * nullLam[i]
+      }
+      nullCI <- getNullCI(muhat, nullDist, confidence_level)
+    } else {
+      nullCI <- quadraticRB(y, sigma, testMat, threshold,
+                            confidence_level, computeFull = TRUE,
+                            rbIters = rbIters)
+      nullDist <- NULL
     }
-    nullCI <- getNullCI(muhat, nullDist, confidence_level)
   } else {
     nullDist <- NULL
     nullCI <- NULL
@@ -341,16 +372,31 @@ mvnQuadratic <- function(y, sigma, testMat = "wald",
   }
 
   # Regime switching CIs -------------------------
-  if(any(c("switch", "global-null") %in% ci_type)) {
-    switchCI <- getSwitchCI(y, muhat, nullDist, testMat, switchTune,
-                            confidence_level, pthreshold, quadlam,
-                            naiveCI)
+  if("switch" %in% ci_type) {
+    if(verbose) print("Computing Switching Regime CIs!")
+    switchCI <- getSwitchCI(y, sigma, testMat, threshold, pthreshold,
+                            confidence_level, quadlam,
+                            t2 = pthreshold * switchTune, testStat,
+                            hybridPval, trueHybrid, rbIters)
   } else {
     switchCI <- NULL
   }
 
   if(ci_type[1] == "switch") {
     ci <- switchCI
+  }
+
+  # Computing hybrid CIs ---------------------
+  if("hybrid" %in% ci_type) {
+    if(verbose) print("Computing Hybrid CIs!")
+    hybridCI <- getHybridCI(y, sigma, testMat, threshold, pthreshold, confidence_level,
+                            hybridPval = hybridPval, trueHybrid, rbIters)
+  } else {
+    hybridCI <- NULL
+  }
+
+  if(ci_type[1] == "hybrid") {
+    ci <- hybridCI
   }
 
   # Wrapping up ------------------
@@ -377,6 +423,7 @@ mvnQuadratic <- function(y, sigma, testMat = "wald",
   results$naiveCI <- naiveCI
   results$switchCI <- switchCI
   results$hybridPval <- hybridPval
+  results$hybridCI <- hybridCI
 
   results$testMat <- testMat
   results$sigma <- sigma
@@ -388,8 +435,11 @@ mvnQuadratic <- function(y, sigma, testMat = "wald",
   results$estimate_type <- estimate_type
   results$pvalue_type <- pvalue_type
   results$ci_type <- ci_type
-
+  results$nullMethod <- nullMethod
+  results$testStat <- testStat
   results$quadlam <- quadlam
+  results$trueHybrid <- trueHybrid
+  results$rbIters <- rbIters
 
   class(results) <- "mvnQuadratic"
   if(verbose) print("Done!")
@@ -407,4 +457,36 @@ conditionalDnorm <- function(lambda, y, precision, ncp, threshold) {
   condDens <- density - prob
   return(condDens)
 }
+
+postQuadraticControl <- function(switchTune = NULL,
+                                 nullMethod = c("RB", "zero-quantile"),
+                                 nSamples = NULL,
+                                 sgdStep = NULL,
+                                 nsteps = 1000,
+                                 trueHybrid = FALSE,
+                                 rbIters = NULL) {
+  control <- list()
+  control$switchTune <- switchTune
+  control$nullMethod <- nullMethod[1]
+  control$nSamples <- nSamples
+  control$sgdStep <- sgdStep
+  control$nsteps <- nsteps
+  control$trueHybrid <- trueHybrid
+  control$rbIters <- rbIters
+  class(control) <- "quadratic_control"
+  return(control)
+}
+
+checkPvalues <- function(pvalvec) {
+  if(!(any(pvalvec %in% c("polyhedral", "hybrid", "global-null", "mle", "naive")))) {
+    stop("pvalue_type not supported!")
+  }
+}
+
+checkCI <- function(civec) {
+  if(!(any(civec %in% c("polyhedral", "switch", "naive", "mle", "hybrid")))) {
+    stop("ci_type not supported!")
+  }
+}
+
 
