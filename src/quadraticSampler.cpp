@@ -191,7 +191,7 @@ double quadraticRobinsMonroe(int var, bool upper, double alpha,
   return u ;
 }
 
-
+// [[Rcpp::export]]
 double linearRobinsMonroe(bool upper, double alpha,
                           double observed, double initU,
                           double contrastCoordinate,
@@ -202,10 +202,7 @@ double linearRobinsMonroe(bool upper, double alpha,
                           double stepSize,
                           int rbIters) {
   // Initializing
-  var -= 1;
-  int p  = contrast.length() ;
   double u = initU ;
-  innerProduct(rawsamp(0, _), sqrtTestMat, mu) ;
   double k = stepSize ;
   double c, m, condMu;
   double posProb, negProb ;
@@ -267,7 +264,6 @@ void vectorAddition(NumericVector result, NumericVector x,
   }
 }
 
-// [[Rcpp::export]]
 // NumericMatrix sampleLogisticCpp(NumericVector y,
 //                                 NumericMatrix X,
 //                                 NumericVector Xy,

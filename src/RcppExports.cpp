@@ -46,26 +46,24 @@ BEGIN_RCPP
     return rcpp_result_gen;
 END_RCPP
 }
-// sampleLogisticCpp
-// NumericMatrix sampleLogisticCpp(NumericVector y, //                                 NumericMatrix X, //                                 NumericVector Xy, //                                 NumericVector Xp, //                                 NumericVector probs, //                                 NumericVector beta, //                                 double intercept, //                                 NumericMatrix testMat, //                                 double threshold, //                                 int nSamples, int burnin, int trim, //                                 NumericVector returnY);
-RcppExport SEXP PSAT_sampleLogisticCpp(SEXP ySEXP, SEXP XSEXP, SEXP XySEXP, SEXP XpSEXP, SEXP probsSEXP, SEXP betaSEXP, SEXP interceptSEXP, SEXP testMatSEXP, SEXP thresholdSEXP, SEXP nSamplesSEXP, SEXP burninSEXP, SEXP trimSEXP, SEXP returnYSEXP) {
+// linearRobinsMonroe
+double linearRobinsMonroe(bool upper, double alpha, double observed, double initU, double contrastCoordinate, NumericVector threshold, double contsd, double condSD, double regConst, double stepSize, int rbIters);
+RcppExport SEXP PSAT_linearRobinsMonroe(SEXP upperSEXP, SEXP alphaSEXP, SEXP observedSEXP, SEXP initUSEXP, SEXP contrastCoordinateSEXP, SEXP thresholdSEXP, SEXP contsdSEXP, SEXP condSDSEXP, SEXP regConstSEXP, SEXP stepSizeSEXP, SEXP rbItersSEXP) {
 BEGIN_RCPP
     Rcpp::RObject rcpp_result_gen;
     Rcpp::RNGScope rcpp_rngScope_gen;
-    Rcpp::traits::input_parameter< NumericVector >::type y(ySEXP);
-    Rcpp::traits::input_parameter< //                                 NumericMatrix >::type X(XSEXP);
-    Rcpp::traits::input_parameter< //                                 NumericVector >::type Xy(XySEXP);
-    Rcpp::traits::input_parameter< //                                 NumericVector >::type Xp(XpSEXP);
-    Rcpp::traits::input_parameter< //                                 NumericVector >::type probs(probsSEXP);
-    Rcpp::traits::input_parameter< //                                 NumericVector >::type beta(betaSEXP);
-    Rcpp::traits::input_parameter< //                                 double >::type intercept(interceptSEXP);
-    Rcpp::traits::input_parameter< //                                 NumericMatrix >::type testMat(testMatSEXP);
-    Rcpp::traits::input_parameter< //                                 double >::type threshold(thresholdSEXP);
-    Rcpp::traits::input_parameter< //                                 int >::type nSamples(nSamplesSEXP);
-    Rcpp::traits::input_parameter< int >::type burnin(burninSEXP);
-    Rcpp::traits::input_parameter< int >::type trim(trimSEXP);
-    Rcpp::traits::input_parameter< //                                 NumericVector >::type returnY(returnYSEXP);
-    rcpp_result_gen = Rcpp::wrap(sampleLogisticCpp(y, X, Xy, Xp, probs, beta, intercept, testMat, threshold, nSamples, burnin, trim, returnY));
+    Rcpp::traits::input_parameter< bool >::type upper(upperSEXP);
+    Rcpp::traits::input_parameter< double >::type alpha(alphaSEXP);
+    Rcpp::traits::input_parameter< double >::type observed(observedSEXP);
+    Rcpp::traits::input_parameter< double >::type initU(initUSEXP);
+    Rcpp::traits::input_parameter< double >::type contrastCoordinate(contrastCoordinateSEXP);
+    Rcpp::traits::input_parameter< NumericVector >::type threshold(thresholdSEXP);
+    Rcpp::traits::input_parameter< double >::type contsd(contsdSEXP);
+    Rcpp::traits::input_parameter< double >::type condSD(condSDSEXP);
+    Rcpp::traits::input_parameter< double >::type regConst(regConstSEXP);
+    Rcpp::traits::input_parameter< double >::type stepSize(stepSizeSEXP);
+    Rcpp::traits::input_parameter< int >::type rbIters(rbItersSEXP);
+    rcpp_result_gen = Rcpp::wrap(linearRobinsMonroe(upper, alpha, observed, initU, contrastCoordinate, threshold, contsd, condSD, regConst, stepSize, rbIters));
     return rcpp_result_gen;
 END_RCPP
 }

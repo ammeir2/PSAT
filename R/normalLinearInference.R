@@ -140,6 +140,35 @@ mvnLinear <- function(y, sigma, contrast,
   }
 
 
+  # Naive pvalues and CIs -----------------------
+  naiveCI <- getNaiveCI(y, sigma, confidence_level)
+  naivePval <- 2 * pnorm(-abs(as.numeric(y / sqrt(diag(sigma)))))
+  if(ci_type[1] == "naive") {
+    ci <- naiveCI
+  }
+  if(pvalue_type[1] == "naive") {
+    pvalue <- naivePval
+  }
+
+  # Regime switching CIs -------------------------
+  if("switch" %in% ci_type) {
+    trueHybrid <- TRUE
+    if(verbose) print("Computing Switching Regime CIs!")
+    switchCI <- getSwitchCI(y, sigma, contrast, threshold, pthreshold,
+                            confidence_level, quadlam,
+                            switchTune, testStat,
+                            hybridPval, trueHybrid, rbIters,
+                            test = "linear")
+  } else {
+    switchCI <- NULL
+  }
+
+  if(ci_type[1] == "switch") {
+    ci <- switchCI
+  }
+
+
+
 }
 
 computeLinearMLE <- function(y, sigma, contrast, threshold) {
