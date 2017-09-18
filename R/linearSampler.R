@@ -1,3 +1,9 @@
+sqrtMat <- function(m) {
+  eig <- eigen(m)
+  sqrtm <- eig$vectors %*% diag(sqrt(abs(eig$values))) %*% t(eig$vectors)
+  return(sqrtm)
+}
+
 sampleLinearTest <- function(nsamp, mu, sigma, contrast, threshold) {
   p <- length(mu)
   m <- sum(mu * contrast)
@@ -16,7 +22,7 @@ sampleLinearTest <- function(nsamp, mu, sigma, contrast, threshold) {
 
   cSig <- sigma %*% contrast
   condVar <- sigma - (cSig %*% t(cSig)) / sd^2
-  sqrtCondVar <- expm::sqrtm(condVar)
+  sqrtCondVar <- sqrtMat(condVar)
   samp <- matrix(rnorm(nsamp * p), nrow = p, ncol = nsamp)
   samp <- sqrtCondVar %*% samp
   condMean <- mu + cSig %*% t(contSamp - m) / sd^2

@@ -61,11 +61,12 @@ getMleCI <- function(muhat, mleDist, confidence_level) {
 }
 
 getHybridCI <- function(y, sigma, testMat, threshold, pthreshold, confidence_level,
-                        hybridPval = NULL, trueHybrid = FALSE, rbIters = NULL) {
+                        hybridPval = NULL, trueHybrid = FALSE, rbIters = NULL,
+                        test = "quadratic") {
   ci <- getSwitchCI(y, sigma, testMat, threshold, pthreshold, confidence_level,
                     quadlam = rep(1, length(y)),
                     t2 = 10^-10,
-                    testStat = 0, rbIters = rbIters)
+                    testStat = 0, rbIters = rbIters, test)
   return(ci)
 }
 
@@ -138,8 +139,8 @@ getSwitchCI <- function(y, sigma, testMat, threshold, pthreshold,
                             computeFull = computeFull,
                             rbIters = rbIters)
     } else if(test == "linear") {
-      nullCI <- linearRB(y, sigma, contrast, threshold,
-                         alpha, rbIters = rbIters,
+      nullCI <- linearRB(y, sigma, contrast, threshold, a,
+                         rbIters = rbIters,
                          variables = whichCompute,
                          computeFull = computeFull)
     }

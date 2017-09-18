@@ -35,12 +35,11 @@ polyhedral.workhorse <- function(eta, u, sigma, testMat, threshold,
 linearPolyhedral <- function(eta, u, sigma, a, threshold,
                              computeCI = FALSE, alpha = 0.05) {
   p <- length(u)
-  c <- as.numeric(t(eta) %*% sigma %*% eta)^-1 * sigma %*% eta
-  theta <- as.numeric(t(eta) %*% u)
-  w <- u - (c * theta)
-  theta <- t(eta) %*% u
-  lower <- as.numeric((threshold[1] - t(a) %*% w) / (t(a) %*% c))
-  upper <- as.numeric((threshold[2] - t(a) %*% w) / (t(a) %*% c))
+  cc <- as.numeric(t(eta) %*% sigma %*% eta)^-1 * sigma %*% eta
+  theta <- sum(eta * u)
+  w <- u - (cc * theta)
+  lower <- as.numeric((threshold[1] - t(a) %*% w) / (t(a) %*% cc))
+  upper <- as.numeric((threshold[2] - t(a) %*% w) / (t(a) %*% cc))
 
   etaSigma <- as.numeric(t(eta) %*% sigma %*% eta)
   etaPval <- ptruncNorm(0, theta, sqrt(etaSigma), lower, upper)

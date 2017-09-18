@@ -118,7 +118,8 @@ mvnLinear <- function(y, sigma, contrast,
   # Computing polyhedral p-values/CIs ---------------------
   if(any(c("polyhedral", "hybrid") %in% pvalue_type) | "polyhedral" %in% ci_type) {
     if(verbose) print("Computing polyhedral p-values/CIs!")
-    polyResult <- getPolyCI(y, sigma, contrast, threshold, confidence_level)
+    polyResult <- getPolyCI(y, sigma, contrast, threshold, confidence_level,
+                            test = "linear")
     polyPval <- polyResult$pval
     polyCI <- polyResult$ci
     if(pvalue_type[1] == "polyhedral") pvalue <- polyPval
@@ -139,6 +140,18 @@ mvnLinear <- function(y, sigma, contrast,
     pvalue <- hybridPval
   }
 
+  # Null Distribution Based CIs ---------------
+  if(("global-null" %in% ci_type)) {
+    nullCI <- linearRB(y, sigma, contrast, threshold,
+                       confidence_level, rbIters = NULL,
+                       variables = NULL, computeFull = TRUE)
+  } else {
+    nullCI <- NULL
+  }
+
+  if(ci_type[1] == "global_null") {
+    ci <- nullCI
+  }
 
   # Naive pvalues and CIs -----------------------
   naiveCI <- getNaiveCI(y, sigma, confidence_level)
@@ -156,7 +169,7 @@ mvnLinear <- function(y, sigma, contrast,
     if(verbose) print("Computing Switching Regime CIs!")
     switchCI <- getSwitchCI(y, sigma, contrast, threshold, pthreshold,
                             confidence_level, quadlam,
-                            switchTune, testStat,
+                            confidence_level^2, testStat,
                             hybridPval, trueHybrid, rbIters,
                             test = "linear")
   } else {
@@ -167,8 +180,53 @@ mvnLinear <- function(y, sigma, contrast,
     ci <- switchCI
   }
 
+  # Computing hybrid CIs ---------------------
+  if("hybrid" %in% ci_type) {
+    if(verbose) print("Computing Hybrid CIs!")
+    hybridCI <- getHybridCI(y, sigma, contrast, threshold, pthreshold, confidence_level,
+                            hybridPval = hybridPval, trueHybrid, rbIters,
+                            test = "linear")
+  } else {
+    hybridCI <- NULL
+  }
 
+  if(ci_type[1] == "hybrid") {
+    ci <- hybridCI
+  }
 
+  # Wrapping up ------------------
+  results <- list()
+  results$muhat <- muhat
+  results$ci <- ci
+  results$pvalue <- pvalue
+
+  results$naiveMu <- y
+  results$mleMu <- mleMu
+  results$nullSample <- nullSample
+  results$nullPval <- nullPval
+  results$polyPval <- polyPval
+  results$polyCI <- polyCI
+  results$nullCI <- nullCI
+  results$naivePval <- naivePval
+  results$naiveCI <- naiveCI
+  results$switchCI <- switchCI
+  results$hybridPval <- hybridPval
+  results$hybridCI <- hybridCI
+
+  results$contrast <- contrast
+  results$sigma <- sigma
+  results$pthreshold <- pthreshold
+  results$threshold <- threshold
+  results$confidence_level <- 1 - confidence_level
+  results$switchTune <- t2
+  results$estimate_type <- estimate_type
+  results$pvalue_type <- pvalue_type
+  results$ci_type <- ci_type
+  results$testStat <- testStat
+  results$trueHybrid <- trueHybrid
+  results$rbIters <- rbIters
+
+  return(results)
 }
 
 computeLinearMLE <- function(y, sigma, contrast, threshold) {
