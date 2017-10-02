@@ -2,14 +2,14 @@
 # Generator token: 10BE3573-1514-4C36-9D1C-5A225CD40393
 
 sampleQuadraticMVTcpp <- function(init, mean, precision, threshold, nSamples, burnin, trim) {
-    .Call('PSAT_sampleQuadraticMVTcpp', PACKAGE = 'PSAT', init, mean, precision, threshold, nSamples, burnin, trim)
+    .Call('_PSAT_sampleQuadraticMVTcpp', PACKAGE = 'PSAT', init, mean, precision, threshold, nSamples, burnin, trim)
 }
 
 quadraticRobinsMonroe <- function(var, upper, alpha, observed, initU, threshold, sqrtTestMat, invSqrtTestMat, sampPrecision, stepSize, burnin, mhiters, rbIters) {
-    .Call('PSAT_quadraticRobinsMonroe', PACKAGE = 'PSAT', var, upper, alpha, observed, initU, threshold, sqrtTestMat, invSqrtTestMat, sampPrecision, stepSize, burnin, mhiters, rbIters)
+    .Call('_PSAT_quadraticRobinsMonroe', PACKAGE = 'PSAT', var, upper, alpha, observed, initU, threshold, sqrtTestMat, invSqrtTestMat, sampPrecision, stepSize, burnin, mhiters, rbIters)
 }
 
 linearRobinsMonroe <- function(upper, alpha, observed, initU, contrastCoordinate, threshold, contsd, condSD, regConst, stepSize, rbIters) {
-    .Call('PSAT_linearRobinsMonroe', PACKAGE = 'PSAT', upper, alpha, observed, initU, contrastCoordinate, threshold, contsd, condSD, regConst, stepSize, rbIters)
+    .Call('_PSAT_linearRobinsMonroe', PACKAGE = 'PSAT', upper, alpha, observed, initU, contrastCoordinate, threshold, contsd, condSD, regConst, stepSize, rbIters)
 }
 

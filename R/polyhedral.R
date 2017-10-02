@@ -40,6 +40,11 @@ linearPolyhedral <- function(eta, u, sigma, a, threshold,
   w <- u - (cc * theta)
   lower <- as.numeric((threshold[1] - t(a) %*% w) / (t(a) %*% cc))
   upper <- as.numeric((threshold[2] - t(a) %*% w) / (t(a) %*% cc))
+  if(lower > upper) {
+    tempUpper <- upper
+    upper <- lower
+    lower <- tempUpper
+  }
 
   etaSigma <- as.numeric(t(eta) %*% sigma %*% eta)
   etaPval <- ptruncNorm(0, theta, sqrt(etaSigma), lower, upper)

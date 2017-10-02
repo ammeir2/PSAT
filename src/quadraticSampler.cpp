@@ -216,10 +216,11 @@ double linearRobinsMonroe(bool upper, double alpha,
     posProb = R::pnorm5(threshold[2], m, contsd, 0, 1) ;
     negProb = 1 / (1 + std::exp(posProb - negProb)) ;
     if(runif(1)[0] < negProb) {
-      contSamp = sampleUnivTruncNorm(m, contsd, threshold[1], false) ;
+      contSamp = sampleUnivTruncNorm(m, contsd, threshold[0], false) ;
     } else {
-      contSamp = sampleUnivTruncNorm(m, contsd, threshold[2], true) ;
+      contSamp = sampleUnivTruncNorm(m, contsd, threshold[1], true) ;
     }
+    // Rcpp::Rcout<<contSamp<<" " ;
 
     // Sampling Coordinate
     condMu = u + regConst * (contSamp - m) ;
@@ -243,6 +244,7 @@ double linearRobinsMonroe(bool upper, double alpha,
     }
   }
 
+  // Rcpp::Rcout<<"\n";
   return u ;
 }
 

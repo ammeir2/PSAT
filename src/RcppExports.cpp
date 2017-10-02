@@ -8,7 +8,7 @@ using namespace Rcpp;
 
 // sampleQuadraticMVTcpp
 NumericMatrix sampleQuadraticMVTcpp(NumericVector init, NumericVector mean, NumericMatrix precision, double threshold, int nSamples, int burnin, int trim);
-RcppExport SEXP PSAT_sampleQuadraticMVTcpp(SEXP initSEXP, SEXP meanSEXP, SEXP precisionSEXP, SEXP thresholdSEXP, SEXP nSamplesSEXP, SEXP burninSEXP, SEXP trimSEXP) {
+RcppExport SEXP _PSAT_sampleQuadraticMVTcpp(SEXP initSEXP, SEXP meanSEXP, SEXP precisionSEXP, SEXP thresholdSEXP, SEXP nSamplesSEXP, SEXP burninSEXP, SEXP trimSEXP) {
 BEGIN_RCPP
     Rcpp::RObject rcpp_result_gen;
     Rcpp::RNGScope rcpp_rngScope_gen;
@@ -25,7 +25,7 @@ END_RCPP
 }
 // quadraticRobinsMonroe
 double quadraticRobinsMonroe(int var, bool upper, double alpha, double observed, double initU, double threshold, NumericMatrix sqrtTestMat, NumericMatrix invSqrtTestMat, NumericMatrix sampPrecision, double stepSize, int burnin, int mhiters, int rbIters);
-RcppExport SEXP PSAT_quadraticRobinsMonroe(SEXP varSEXP, SEXP upperSEXP, SEXP alphaSEXP, SEXP observedSEXP, SEXP initUSEXP, SEXP thresholdSEXP, SEXP sqrtTestMatSEXP, SEXP invSqrtTestMatSEXP, SEXP sampPrecisionSEXP, SEXP stepSizeSEXP, SEXP burninSEXP, SEXP mhitersSEXP, SEXP rbItersSEXP) {
+RcppExport SEXP _PSAT_quadraticRobinsMonroe(SEXP varSEXP, SEXP upperSEXP, SEXP alphaSEXP, SEXP observedSEXP, SEXP initUSEXP, SEXP thresholdSEXP, SEXP sqrtTestMatSEXP, SEXP invSqrtTestMatSEXP, SEXP sampPrecisionSEXP, SEXP stepSizeSEXP, SEXP burninSEXP, SEXP mhitersSEXP, SEXP rbItersSEXP) {
 BEGIN_RCPP
     Rcpp::RObject rcpp_result_gen;
     Rcpp::RNGScope rcpp_rngScope_gen;
@@ -48,7 +48,7 @@ END_RCPP
 }
 // linearRobinsMonroe
 double linearRobinsMonroe(bool upper, double alpha, double observed, double initU, double contrastCoordinate, NumericVector threshold, double contsd, double condSD, double regConst, double stepSize, int rbIters);
-RcppExport SEXP PSAT_linearRobinsMonroe(SEXP upperSEXP, SEXP alphaSEXP, SEXP observedSEXP, SEXP initUSEXP, SEXP contrastCoordinateSEXP, SEXP thresholdSEXP, SEXP contsdSEXP, SEXP condSDSEXP, SEXP regConstSEXP, SEXP stepSizeSEXP, SEXP rbItersSEXP) {
+RcppExport SEXP _PSAT_linearRobinsMonroe(SEXP upperSEXP, SEXP alphaSEXP, SEXP observedSEXP, SEXP initUSEXP, SEXP contrastCoordinateSEXP, SEXP thresholdSEXP, SEXP contsdSEXP, SEXP condSDSEXP, SEXP regConstSEXP, SEXP stepSizeSEXP, SEXP rbItersSEXP) {
 BEGIN_RCPP
     Rcpp::RObject rcpp_result_gen;
     Rcpp::RNGScope rcpp_rngScope_gen;
@@ -66,4 +66,16 @@ BEGIN_RCPP
     rcpp_result_gen = Rcpp::wrap(linearRobinsMonroe(upper, alpha, observed, initU, contrastCoordinate, threshold, contsd, condSD, regConst, stepSize, rbIters));
     return rcpp_result_gen;
 END_RCPP
+}
+
+static const R_CallMethodDef CallEntries[] = {
+    {"_PSAT_sampleQuadraticMVTcpp", (DL_FUNC) &_PSAT_sampleQuadraticMVTcpp, 7},
+    {"_PSAT_quadraticRobinsMonroe", (DL_FUNC) &_PSAT_quadraticRobinsMonroe, 13},
+    {"_PSAT_linearRobinsMonroe", (DL_FUNC) &_PSAT_linearRobinsMonroe, 11},
+    {NULL, NULL, 0}
+};
+
+RcppExport void R_init_PSAT(DllInfo *dll) {
+    R_registerRoutines(dll, NULL, CallEntries, NULL, NULL);
+    R_useDynamicSymbols(dll, FALSE);
 }
