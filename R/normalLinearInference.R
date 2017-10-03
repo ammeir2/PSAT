@@ -1,6 +1,6 @@
 mvnLinear <- function(y, sigma, contrast,
                       threshold, pval_threshold,
-                      selection = c("lower", "upper", "two_sided"),
+                      selection = c("two_sided", "lower", "upper"),
                       estimate_type = c("mle", "naive"),
                       pvalue_type = c("hybrid", "polyhedral", "naive"),
                       ci_type = c("switch", "polyhedral", "naive"),
@@ -202,7 +202,7 @@ mvnLinear <- function(y, sigma, contrast,
   results$naiveMu <- y
   results$mleMu <- mleMu
   results$nullSample <- nullSample
-  results$nullPval <- nullPval
+  results$nullPval <- pmax(nullPval, naivePval)
   results$polyPval <- polyPval
   results$polyCI <- polyCI
   results$nullCI <- nullCI
@@ -224,6 +224,7 @@ mvnLinear <- function(y, sigma, contrast,
   results$testStat <- testStat
   results$trueHybrid <- trueHybrid
   results$rbIters <- rbIters
+  results$testType <- "linear"
 
   class(results) <- "mvnLinear"
 

@@ -410,7 +410,7 @@ mvnQuadratic <- function(y, sigma, testMat = "wald",
   results$solutionPath <- solutionPath
   results$nullSample <- nullSample
   results$nullDist <- nullDist
-  results$nullPval <- nullPval
+  results$nullPval <- pmax(nullPval, naivePval)
   results$polyPval <- polyPval
   results$polyCI <- polyCI
   results$mleSample <- mleSample
@@ -440,6 +440,7 @@ mvnQuadratic <- function(y, sigma, testMat = "wald",
   results$quadlam <- quadlam
   results$trueHybrid <- trueHybrid
   results$rbIters <- rbIters
+  results$testType <- "quadratic"
 
   class(results) <- "mvnQuadratic"
   if(verbose) print("Done!")

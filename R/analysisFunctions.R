@@ -24,18 +24,13 @@
 #' coefficients.
 getCI <- function(object, type = NULL, confidence_level = NULL, switchTune = NULL) {
   # Checking arguments ---------
-  if(!(class(object) %in% c("mvnQuadratic", "glmQuadratic",
-                            "mvnLinear", "glmLinear"))) {
+  if(!any(class(object) %in% c("mvnQuadratic", "psatGLM", "mvnLinear"))) {
     stop("Invalid object type!")
   }
 
-  if(class(object) %in% c("mvnQuadratic", "glmQuadratic")) {
-    aggregateTest <- "quadratic"
-  } else {
-    aggregateTest <- "linear"
-  }
+  aggregateTest <- object$testType
 
-  if(class(object) == "glmQuadratic") {
+  if("psatGLM" %in% class(object)) {
     object$muhat <- object$betahat[-1]
     object$naiveMu <- object$naiveBeta[-1]
   }
@@ -167,19 +162,21 @@ getCI <- function(object, type = NULL, confidence_level = NULL, switchTune = NUL
 #'
 getPval <- function(object, type = NULL) {
   # If aggregate pvalues --------------
-  if(class(object) == "aggregatePvalues") {
+  if(class(object)[1] == "aggregatePvalues") {
     return(object$p2C)
   }
 
   # Checking arguments ---------
-  if(!(class(object) %in% c("mvnQuadratic", "glmQuadratic"))) {
+  if(!any(class(object) %in% c("mvnQuadratic", "mvnLinear", "psatGLM"))) {
     stop("Invalid object type!")
   }
 
-  if(class(object) == "glmQuadratic") {
+  if("psatGLM" %in% class(object)) {
     object$muhat <- object$betahat[-1]
     object$naiveMu <- object$naiveBeta[-1]
   }
+
+  aggregateTest <- object$testType
 
   type <- type[1]
   if(is.null(type)) {
@@ -190,7 +187,8 @@ getPval <- function(object, type = NULL) {
   if(type == "polyhedral") {
     if(is.null(object$polyPval)) {
       return(getPolyCI(object$naiveMu, object$sigma, object$testMat,
-                object$threshold, confidence_level, FALSE)$pval)
+                object$threshold, confidence_level, FALSE,
+                test = aggregateTest)$pval)
     } else {
       return(object$polyPval)
     }
@@ -203,7 +201,8 @@ getPval <- function(object, type = NULL) {
     }
     if(is.null(object$polyPval)) {
       polyPval <- getPolyCI(object$naiveMu, object$sigma, object$testMat,
-                            object$threshold, confidence_level, FALSE)$pval
+                            object$threshold, confidence_level, FALSE,
+                            test = aggregateTest)$pval
     } else {
       polyPval <- object$polyPval
     }
@@ -270,12 +269,47 @@ coef.mvnQuadratic <- function(object, type = NULL) {
   stop("Unsupported estimate type!")
 }
 
-#' Retrieve Coefficient Estimates from a glmQuadratic Fit
+
+#' Retrieve Parameter Estimates from an mvnLinear Fit
+#'
+#' @description Retrieve parameter estimates from an
+#' \code{\link{mvnLinear}} fit.
+#'
+#' @param object a \code{\link{mvnLinear}} object.
+#'
+#' @param type the type of estimates to return, should be
+#' set to to either "mle" or "naive". If left \code{NULL} then
+#' the mle will be returned.
+#'
+#' @return An estimate of the mean parameter of the normal
+#' distribution.
+coef.mvnLinear <- function(object, type = NULL) {
+  if(is.null(type)) {
+    return(object$muhat)
+  }
+
+  if(type == "mle") {
+    if(is.null(object$mleMu)) {
+      stop("Please re-run fitting routine with `mle' estimate_type option.")
+    } else {
+      return(object$mleMu)
+    }
+  }
+
+  if(type == "naive") {
+    return(object$naiveMu)
+  }
+
+  stop("Unsupported estimate type!")
+}
+
+
+#' Retrieve Coefficient Estimates from a psatGLM Fit
 #'
 #' @description Retrieve coefficients estimates from a
-#' \code{\link{glmQuadratic}} fit.
+#' \code{\link{psatGLM}} fit.
 #'
-#' @param object a \code{\link{glmQuadratic}} object.
+#' @param object a \code{\link{psatGLM}} object.
 #'
 #' @param type the type of estimates to return, should be
 #' set to to either "mle" or "naive". If left \code{NULL} then
@@ -283,7 +317,7 @@ coef.mvnQuadratic <- function(object, type = NULL) {
 #'
 #' @return An estimate of the regression coefficients of the
 #' generalized linear model.
-coef.glmQuadratic <- function(object, type = NULL) {
+coef.psatGLM <- function(object, type = NULL) {
   if(is.null(type)) {
     return(object$betahat)
   }
@@ -307,13 +341,13 @@ predict.mvnQuadratic <- function(object) {
   return(object$muhat)
 }
 
-#' Retrieve Linear Predictors from a glmQuadratic Fit
+#' Retrieve Linear Predictors from a psatGLM Fit
 #'
-#' @description Retrieve the linear predictor from a glmQuadratic
+#' @description Retrieve the linear predictor from a psatGLM
 #' fit. This is the same as the \code{type = "link"} option in
 #' \code{\link[stats]{predict.glm}}.
 #'
-#' @param object a \code{\link{glmQuadratic}} object.
+#' @param object a \code{\link{psatGLM}} object.
 #'
 #' @param newX a new matrix of covariates. If left \code{NULL} the
 #'  linear predictors for the data used for fitting the model will be
@@ -321,8 +355,8 @@ predict.mvnQuadratic <- function(object) {
 #'
 #' @return A vector of linear predictors.
 #'
-#' @seealso \code{\link{glmQuadratic}}
-predict.glmQuadratic <- function(object, newX = NULL) {
+#' @seealso \code{\link{psatGLM}}
+predict.psatGLM <- function(object, newX = NULL) {
   if(is.null(newX)) {
     X <- object$X
   } else {
@@ -333,11 +367,11 @@ predict.glmQuadratic <- function(object, newX = NULL) {
   return(as.numeric(X %*% object$betahat))
 }
 
-#' Summarizing glmQuadratic Fits
+#' Summarizing psatGLM Fits
 #'
-#' @description A summary method for \code{\link{glmQuadratic}} objects.
+#' @description A summary method for \code{\link{psatGLM}} objects.
 #'
-#' @param object an object of type \code{\link{glmQuadratic}}.
+#' @param object an object of type \code{\link{psatGLM}}.
 #'
 #' @param estimate_type see \code{\link{mvnQuadratic}} for details.
 #'
@@ -348,7 +382,7 @@ predict.glmQuadratic <- function(object, newX = NULL) {
 #' @param confidence_level see \code{\link{mvnQuadratic}} for details.
 #'
 #' @details This is a summary method for summarizing the results of
-#' post aggregate testing analysis with the \code{\link{glmQuadratic}}
+#' post aggregate testing analysis with the \code{\link{psatGLM}}
 #' method. The main output of the function is a table of regression coefficients
 #' with confidence intervals and p-values computed using the desired methods.
 #' This function is accompanied by a convenient printing function.
@@ -356,8 +390,8 @@ predict.glmQuadratic <- function(object, newX = NULL) {
 #' @return A list containing a table of regression coefficients and details
 #' regarding the inference methods used.
 #'
-#' @seealso \code{\link{glmQuadratic}}
-summary.glmQuadratic <- function(object, estimate_type = NULL, pvalue_type = NULL,
+#' @seealso \code{\link{psatGLM}}
+summary.psatGLM <- function(object, estimate_type = NULL, pvalue_type = NULL,
                                  ci_type = NULL, confidence_level = NULL) {
   est <- coef(object, type = estimate_type)
   if(is.null(estimate_type)) {
@@ -424,12 +458,14 @@ summary.glmQuadratic <- function(object, estimate_type = NULL, pvalue_type = NUL
   sum$ci_type <- ci_type
   sum$pvalue_type <- pvalue_type
   sum$estimate_type <- estimate_type
-  class(sum) <- "glmQuadratic_summary"
+  sum$testType <- object$testType
+  class(sum) <- "psatGLM_summary"
   return(sum)
 }
 
-print.glmQuadratic_summary <- function(sum) {
+print.psatGLM_summary <- function(sum) {
   cat("Results for Post-Aggregate Testing Analysis \n \n")
+  cat("Aggregate Test Type: ", sum$testType, "\n")
   cat("Estimation Method: ", sum$estimate_type, "\n")
   cat("P-value Type: ", sum$pvalue_type, "\n")
   cat("Confidence Interval Type: ", sum$ci_type, "      Confidence Level:", sum$confidence_level, "\n\n")

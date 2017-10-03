@@ -54,21 +54,49 @@
 #' \code{\link{getPval}}, \code{\link{plot.glmQuadratic}},
 #' \code{\link{summary.glmQuadratic}}, \code{\link{coef.glmQuadratic}},
 #' \code{\link{predict.glmQuadratic}}
-glmQuadratic <- function(X, y, testMat = "wald", family = "gaussian",
-                         resid_sd = c("null", "naive"),
-                         threshold = NULL, pval_threshold = 0.05,
-                         estimate_type = c("mle", "naive"),
-                         pvalue_type = c("hybrid", "polyhedral", "naive"),
-                         ci_type = c("switch", "polyhedral", "naive"),
-                         confidence_level = .95,
-                         verbose = TRUE,
-                         control = postQuadraticControl()){
+psatGLM <- function(X, y, test = "wald",
+                    test_direction = c("two-sided", "lower", "upper"),
+                    family = "gaussian",
+                    resid_sd = c("null", "naive"),
+                    threshold = NULL, pval_threshold = 0.05,
+                    estimate_type = c("mle", "naive"),
+                    pvalue_type = c("hybrid", "polyhedral", "naive"),
+                    ci_type = c("switch", "polyhedral", "naive"),
+                    confidence_level = .95,
+                    verbose = TRUE,
+                    control = postQuadraticControl()){
 
   family <- family[1]
   if(any(family %in% c("quasi", "quasibinomial", "quasipoisson"))) {
     warning("Overdispersed families are not explicity supported!")
   }
 
+  # What is the screening method? ------------
+  if(is.matrix(test)) {
+    if(all(dim(test) == ncol(X)))
+    testType <- "quadratic"
+  } else if(length(test) == ncol(X)) {
+    testType <- "linear"
+  } else if(is.character(test)) {
+    if(test == "wald") {
+      testType <- "quadratic"
+    }
+  } else {
+    stop("Unable to determine test type. `test' variable must be one of:
+         \n 1. A matrix of dimension ncol(X) x ncol(X) (for a general quadratic test).
+         \n 2. The string `wald' (for Wald test).
+         \n 3. A vector of length ncol(X).")
+  }
+
+  if(testType == "quadratic" & length(test_direction) == 1) {
+    warning("`test_direction' is irrelevant for a quadratic test!")
+  }
+
+  if(testType == "quadratic" & length(threshold) > 1) {
+    stop("For a quadratic test, `threshold' must be either a scalar or NULL!")
+  }
+
+  # Starting analysis ------------
   naivefit <- glm(y ~ X, family = family)
   naiveBeta <- coef(naivefit)[-1]
 
@@ -85,13 +113,25 @@ glmQuadratic <- function(X, y, testMat = "wald", family = "gaussian",
     }
   }
 
-  mvnfit <- mvnQuadratic(naiveBeta, sigma, testMat = testMat,
-                         threshold = threshold, pval_threshold = pval_threshold,
-                         estimate_type = estimate_type,
-                         pvalue_type = pvalue_type,
-                         ci_type = ci_type,
-                         confidence_level = confidence_level,
-                         verbose = verbose, control = control)
+  if(testType == "quadratic") {
+    mvnfit <- mvnQuadratic(naiveBeta, sigma, testMat = test,
+                           threshold = threshold, pval_threshold = pval_threshold,
+                           estimate_type = estimate_type,
+                           pvalue_type = pvalue_type,
+                           ci_type = ci_type,
+                           confidence_level = confidence_level,
+                           verbose = verbose, control = control)
+  } else if(testType == "linear") {
+    mvnfit <- mvnLinear(y = naiveBeta, sigma = sigma, contrast = test,
+                        threshold = threshold, pval_threshold = pval_threshold,
+                        selection = test_direction,
+                        estimate_type = estimate_type,
+                        pvalue_type = pvalue_type,
+                        ci_type = ci_type,
+                        confidence_level = confidence_level,
+                        verbose = verbose, trueHybrid = TRUE)
+  }
+
   results <- mvnfit
   results$y <- y
   results$X <- X
@@ -120,6 +160,6 @@ glmQuadratic <- function(X, y, testMat = "wald", family = "gaussian",
   results$naiveMu <- NULL
   results$family <- family
   results$interceptsd <- interceptsd
-  class(results) <- "glmQuadratic"
+  class(results) <- c("psatGLM", class(results))
   return(results)
 }

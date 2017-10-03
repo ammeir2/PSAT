@@ -1,5 +1,5 @@
 ---
-title: "Inference After Quadratic Aggregate Testing"
+title: "Inference After Linear Aggregate Testing"
 author: "Amit Meir"
 date: "10/3/2017"
 output:
@@ -17,13 +17,13 @@ devtools::install_github("ammeir2/PSAT")
 ```
 
 ## Inference for Normal Means 
-The PSAT pacakge provides functionalities for performing inference on multivariate normal vectors and generalized linear models that pass a qudratic aggregate tests. Suppose that we observe $y \sim N(\mu, \Sigma)$ and that we wish to perform inference on the individual coordinates of $\mu$ only if we can reject a quadratic test of the form:
+The PSAT pacakge provides functionalities for performing inference on multivariate normal vectors and generalized linear models that pass a linear aggregate test. Suppose that we observe $y \sim N_p(\mu, \Sigma)$ and that we wish to perform inference on the individual coordinates of $\mu$ only if we can reject a linear test of the form:
 
 $$
-y^{T} K y > c > 0
+|a^{T} y| > c > 0, \qquad a\in\Re^{p}.
 $$
 
-for some pre-determined threshold $c$. Then, we must account for the fact that we have selected the model via a data driven method or in order to obtain valid p-values, confidence intervals that achieve the desire coverage rate and efficient point estimates. Let us begin with generating a dataset by sampling multivariate normal vectors and screening with a Wald test, so $K = \Sigma^{-1}$.
+for some pre-determined threshold $c$ and vector $a$. Then, we must account for the fact that we have selected the model via a data driven method or in order to obtain valid p-values, confidence intervals that achieve the desire coverage rate and efficient point estimates. Let us begin with generating a dataset by sampling multivariate normal vectors and screening with a contrast $a = (1,\dots,1)$.
 
 ```{r generateNormal, warning = FALSE, message = FALSE, cache = TRUE}
 # Tests for wald test ------------------------
@@ -31,7 +31,7 @@ set.seed(5)
 p <- 8
 sparsity <- 2
 snr <- 3
-mu <- rexp(sparsity) * (1 - 2 * rbinom(sparsity, 1, 0.5))
+mu <- rexp(sparsity) 
 mu <- mu / sum(abs(mu)) * snr
 mu <- c(mu, rep(0, p - sparsity))
 # sigma <- cov2cor(clusterGeneration::genPositiveDefMat(p)$Sigma)

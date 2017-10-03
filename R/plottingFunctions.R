@@ -22,7 +22,7 @@
 #' @seealso \code{\link{mvnQuadratic}}, \code{\link{glmQuadratic}},
 #' \code{\link{plotEstimates}}, \code{\link{plotSolutionPath}},
 #'  \code{\link{plotPvalues}}
-plot.glmQuadratic <- function(object, type = c("estimates", "solution_path", "p-values"), ... ) {
+plot.psatGLM <- function(object, type = c("estimates", "solution_path", "p-values"), ... ) {
   object$naiveMu <- object$naiveBeta[-1]
   if(!is.null(object$mleBeta)) {
     object$mleMu <- object$mleBeta[-1]
@@ -137,6 +137,10 @@ plotEstimates <- function(object, true = NULL, offset = 0.12) {
 #' gradient method.
 plotSolutionPath <- function(object) {
   path <- object$solutionPath
+  if(object$testType == "linear") {
+    stop("Inference after linear aggregate tests does not require stochastic optimization.")
+  }
+
   if(is.null(path)) {
     stop("No solution path, was stochastic optimization performed?")
   }
