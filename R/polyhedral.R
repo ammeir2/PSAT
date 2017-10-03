@@ -62,23 +62,49 @@ linearPolyhedral <- function(eta, u, sigma, a, threshold,
 
 findPolyCIlimits <- function(theta, etaSigma, lower, upper, alpha) {
   llim <- theta
-  tempPval <- ptruncNorm(llim, theta, sqrt(etaSigma), lower, upper)
-  while(tempPval < 1 - alpha / 2) {
+  ltempPval <- ptruncNorm(llim, theta, sqrt(etaSigma), lower, upper)
+  while(ltempPval < 1 - alpha / 2) {
     llim <- llim - sqrt(etaSigma) * 0.1
-    tempPval <- ptruncNorm(llim, theta, sqrt(etaSigma), lower, upper)
+    ltempPval <- ptruncNorm(llim, theta, sqrt(etaSigma), lower, upper)
+    if(is.nan(ltempPval)) {
+      llim <- llim + sqrt(etaSigma) * 0.1
+      break
+    }
   }
 
   ulim <- theta
-  tempPval <- ptruncNorm(ulim, theta, sqrt(etaSigma), lower, upper)
-  while(tempPval > alpha / 2) {
+  utempPval <- ptruncNorm(ulim, theta, sqrt(etaSigma), lower, upper)
+  while(utempPval > alpha / 2) {
     ulim <- ulim + sqrt(etaSigma) * 0.1
-    tempPval <- ptruncNorm(ulim, theta, sqrt(etaSigma), lower, upper)
+    utempPval <- ptruncNorm(ulim, theta, sqrt(etaSigma), lower, upper)
+    if(is.nan(utempPval)) {
+      ulim <- ulim - sqrt(etaSigma) * 0.1
+      break
+    }
   }
 
-  uci <- uniroot(f = function(x) ptruncNorm(x, theta, sqrt(etaSigma), lower, upper) - alpha / 2,
-                 interval = c(llim, ulim))$root
-  lci <- uniroot(f = function(x) ptruncNorm(x, theta, sqrt(etaSigma), lower, upper) - (1 - alpha / 2),
-                 interval = c(llim, ulim))$root
+  if(is.nan(utempPval)) {
+    uci <- ulim
+  } else {
+    uci <- NULL
+    capture.output(invisible(try(uci <- uniroot(f = function(x) ptruncNorm(x, theta, sqrt(etaSigma), lower, upper) - alpha / 2,
+                   interval = c(llim, ulim))$root)))
+    if(is.null(uci)){
+      uci <- ulim
+    }
+  }
+
+  if(is.nan(ltempPval)) {
+    lci <- llim
+  } else {
+    lci <- NULL
+    capture.output(invisible(try(lci <- uniroot(f = function(x) ptruncNorm(x, theta, sqrt(etaSigma), lower, upper) - (1 - alpha / 2),
+                   interval = c(llim, ulim))$root)))
+    if(is.null(lci)) {
+      lci <- llim
+    }
+  }
+
   ci <- c(lci, uci)
   return(ci)
 }

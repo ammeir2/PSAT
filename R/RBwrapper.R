@@ -72,7 +72,7 @@ linearRB <- function(y, sigma, contrast, threshold,
 
   # Computing matrices ---------------
   if(is.null(rbIters)) {
-    rbIters <- 250  * (1 - alpha) / alpha
+    rbIters <- 500  * (1 - alpha) / alpha
   }
 
   contsd <- as.numeric(sqrt(t(contrast) %*% sigma %*% contrast))
@@ -88,10 +88,10 @@ linearRB <- function(y, sigma, contrast, threshold,
       }
 
       if(upper) {
-        init <- y[j] + qnorm(1 - alpha / 8) * sqrt(diag(sigma)[j])
+        init <- y[j] + qnorm(1 - alpha / 4) * sqrt(diag(sigma)[j])
         a <- alpha / 2
       } else {
-        init <- y[j] - qnorm(1 - alpha / 8) * sqrt(diag(sigma)[j])
+        init <- y[j] - qnorm(1 - alpha / 4) * sqrt(diag(sigma)[j])
         a <- alpha / 2
       }
 

@@ -6,7 +6,7 @@ mvnLinear <- function(y, sigma, contrast,
                       ci_type = c("switch", "polyhedral", "naive"),
                       confidence_level = .95,
                       verbose = TRUE,
-                      nSamples = NULL) {
+                      nSamples = NULL, trueHybrid = FALSE) {
 
 
   checkPvalues(pvalue_type)
@@ -165,7 +165,6 @@ mvnLinear <- function(y, sigma, contrast,
 
   # Regime switching CIs -------------------------
   if("switch" %in% ci_type) {
-    trueHybrid <- TRUE
     if(verbose) print("Computing Switching Regime CIs!")
     switchCI <- getSwitchCI(y, sigma, contrast, threshold, pthreshold,
                             confidence_level, quadlam,
@@ -226,6 +225,8 @@ mvnLinear <- function(y, sigma, contrast,
   results$trueHybrid <- trueHybrid
   results$rbIters <- rbIters
 
+  class(results) <- "mvnLinear"
+
   return(results)
 }
 
@@ -239,11 +240,11 @@ computeLinearMLE <- function(y, sigma, contrast, threshold) {
 
   maximum <- optimize(f = computeLinearDens, interval = interval,
                       maximum = TRUE,
-                      naive, y, cSig, sd, threshold)$maximum
+                      naive, y, cSig, sd, threshold, solve(sigma))$maximum
   return(y + (maximum - naive) * cSig)
 }
 
-computeLinearDens <- function(m, naive, y, cSig, sd, threshold) {
+computeLinearDens <- function(m, naive, y, cSig, sd, threshold, precision) {
   diff <- (m - naive) * cSig
   density <- -0.5 * t(diff) %*% precision %*% diff
   prob <- pnorm(threshold[1], sd = sd, mean = m) +

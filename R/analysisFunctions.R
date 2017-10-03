@@ -24,8 +24,15 @@
 #' coefficients.
 getCI <- function(object, type = NULL, confidence_level = NULL, switchTune = NULL) {
   # Checking arguments ---------
-  if(!(class(object) %in% c("mvnQuadratic", "glmQuadratic"))) {
+  if(!(class(object) %in% c("mvnQuadratic", "glmQuadratic",
+                            "mvnLinear", "glmLinear"))) {
     stop("Invalid object type!")
+  }
+
+  if(class(object) %in% c("mvnQuadratic", "glmQuadratic")) {
+    aggregateTest <- "quadratic"
+  } else {
+    aggregateTest <- "linear"
   }
 
   if(class(object) == "glmQuadratic") {
@@ -58,7 +65,8 @@ getCI <- function(object, type = NULL, confidence_level = NULL, switchTune = NUL
   if(type == "polyhedral") {
     if(recompute | is.null(object$polyCI)) {
       return(getPolyCI(object$naiveMu, object$sigma, object$testMat,
-                       object$threshold, confidence_level)$ci)
+                       object$threshold, confidence_level,
+                       test = aggregateTest)$ci)
     } else {
       return(object$polyCI)
     }
@@ -77,7 +85,7 @@ getCI <- function(object, type = NULL, confidence_level = NULL, switchTune = NUL
                             object$pthreshold, confidence_level,
                             object$quadlam, t2 = switchTune * object$pthreshold,
                             object$testStat, object$hybridPval,
-                            object$trueHybrid)
+                            object$trueHybrid, test = aggregateTest)
       return(switch)
     }
   }
@@ -93,17 +101,21 @@ getCI <- function(object, type = NULL, confidence_level = NULL, switchTune = NUL
 
   # Global Null -------------
   if(type == "global-null") {
-    if(is.null(object$nullDist)) {
-      stop("Please re-run fitting function with `switch`, `global-null` or `hybrid' ci_type options.")
-    } else if(!recompute & !is.null(object$nullCI)) {
+    if(!recompute & !is.null(object$nullCI)) {
       return(object$nullCI)
     } else {
       if(object$nullMethod == "zero-quantile") {
         return(getNullCI(object$muhat, object$nullDist, confidence_level))
       } else {
-        ci <- quadraticRB(object$naiveMu, object$sigma,
-                          object$testMat, object$threshold,
-                          confidence_level, computeFull = TRUE)
+        if(aggregateTest == "quadratic") {
+          ci <- quadraticRB(object$naiveMu, object$sigma,
+                            object$testMat, object$threshold,
+                            confidence_level, computeFull = TRUE)
+        } else if(aggregateTest == "linear") {
+          ci <- linearRB(object$naiveMu, object$sigma,
+                         object$contrast, object$threshold,
+                         object$sigma, computeFull = TRUE)
+        }
         return(ci)
       }
     }
@@ -127,10 +139,10 @@ getCI <- function(object, type = NULL, confidence_level = NULL, switchTune = NUL
       ci <- getHybridCI(object$naiveMu, object$sigma,
                         object$testMat, object$threshold,
                         object$pthreshold, confidence_level,
-                        object$hybridPval, object$trueHybrid)
+                        object$hybridPval, object$trueHybrid,
+                        test = aggregateTest)
       return(ci)
     }
-
   }
 
   # Oopps --------
