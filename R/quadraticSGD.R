@@ -53,3 +53,25 @@ quadraticSGD <- function(y, sigma, precision, testmat, threshold,
   mle <- colMeans(solutionPath[assumeCovergence:sgdSteps, ])
   return(list(mle = mle, solutionPath = solutionPath, sampMat = sampmat))
 }
+
+
+
+evaluateQuadraticLikelihood <- function(mu, y, threshold,
+                                        precision, lam, deltamat) {
+  diff <- y - mu
+  dens <- -0.5 * (t(diff) %*%  precision %*% diff)
+  delta <- as.numeric(deltamat %*% mu)
+  prob <- liu(threshold, lambda = lam, delta = delta^2)
+  return(-dens + log(prob))
+}
+
+quadraticNM <- function(y, sigma, precision, testMat, threshold) {
+  liuParams <- getQudraticLam(testMat, sigma, FALSE)
+  lam <- liuParams$lam
+  deltamat <- liuParams$deltamat
+  result <- optim(par = y, fn = evaluateQuadraticLikelihood,
+                  y = y, threshold = threshold, precision = precision,
+                  lam = lam, deltamat = deltamat,
+                  method = "Nelder-Mead")$par
+  return(result)
+}

@@ -22,7 +22,8 @@
 #' @seealso \code{\link{mvnQuadratic}}, \code{\link{glmQuadratic}},
 #' \code{\link{plotEstimates}}, \code{\link{plotSolutionPath}},
 #'  \code{\link{plotPvalues}}
-plot.psatGLM <- function(object, type = c("estimates", "solution_path", "p-values"), ... ) {
+plot.psatGLM <- function(x, type = c("estimates", "solution_path", "p-values"), ... ) {
+  object <- x
   object$naiveMu <- object$naiveBeta[-1]
   if(!is.null(object$mleBeta)) {
     object$mleMu <- object$mleBeta[-1]
@@ -35,7 +36,8 @@ plot.psatGLM <- function(object, type = c("estimates", "solution_path", "p-value
 #' Plot results for mvnQuadratic Objects
 #'
 #' @description see \code{\link{plot.glmQuadratic}} for details.
-plot.mvnQuadratic <- function(object, type = c("estimates", "solution-path", "p-values"), ...) {
+plot.mvnQuadratic <- function(x, type = c("estimates", "solution-path", "p-values"), ...) {
+  object <- x
   type <- type[1]
   if(type == "estimates") {
     return(plotEstimates(object, ...))

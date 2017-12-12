@@ -249,7 +249,7 @@ getPval <- function(object, type = NULL) {
 #'
 #' @return An estimate of the mean parameter of the normal
 #' distribution.
-coef.mvnQuadratic <- function(object, type = NULL) {
+coef.mvnQuadratic <- function(object, type = NULL, ...) {
   if(is.null(type)) {
     return(object$muhat)
   }
@@ -283,7 +283,7 @@ coef.mvnQuadratic <- function(object, type = NULL) {
 #'
 #' @return An estimate of the mean parameter of the normal
 #' distribution.
-coef.mvnLinear <- function(object, type = NULL) {
+coef.mvnLinear <- function(object, type = NULL, ...) {
   if(is.null(type)) {
     return(object$muhat)
   }
@@ -317,7 +317,7 @@ coef.mvnLinear <- function(object, type = NULL) {
 #'
 #' @return An estimate of the regression coefficients of the
 #' generalized linear model.
-coef.psatGLM <- function(object, type = NULL) {
+coef.psatGLM <- function(object, type = NULL, ...) {
   if(is.null(type)) {
     return(object$betahat)
   }
@@ -337,7 +337,7 @@ coef.psatGLM <- function(object, type = NULL) {
   stop("Unsupported estimate type!")
 }
 
-predict.mvnQuadratic <- function(object) {
+predict.mvnQuadratic <- function(object, ...) {
   return(object$muhat)
 }
 
@@ -356,7 +356,7 @@ predict.mvnQuadratic <- function(object) {
 #' @return A vector of linear predictors.
 #'
 #' @seealso \code{\link{psatGLM}}
-predict.psatGLM <- function(object, newX = NULL) {
+predict.psatGLM <- function(object, newX = NULL, ...) {
   if(is.null(newX)) {
     X <- object$X
   } else {
@@ -392,7 +392,7 @@ predict.psatGLM <- function(object, newX = NULL) {
 #'
 #' @seealso \code{\link{psatGLM}}
 summary.psatGLM <- function(object, estimate_type = NULL, pvalue_type = NULL,
-                                 ci_type = NULL, confidence_level = NULL) {
+                                 ci_type = NULL, confidence_level = NULL, ...) {
   est <- coef(object, type = estimate_type)
   if(is.null(estimate_type)) {
     estimate_type <- object$estimate_type[1]
@@ -463,7 +463,8 @@ summary.psatGLM <- function(object, estimate_type = NULL, pvalue_type = NULL,
   return(sum)
 }
 
-print.psatGLM_summary <- function(sum) {
+print.psatGLM_summary <- function(x, ...) {
+  sum <- x
   cat("Results for Post-Aggregate Testing Analysis \n \n")
   cat("Aggregate Test Type: ", sum$testType, "\n")
   cat("Estimation Method: ", sum$estimate_type, "\n")

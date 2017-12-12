@@ -114,7 +114,15 @@ sgdfit <- mvnQuadratic(y, sigma, testMat = testmat, threshold = NULL, pval_thres
                        estimate_type = c("mle", "naive"),
                        pvalue_type = c("polyhedral", "hybrid", "naive"),
                        ci_type = c("polyhedral", "switch", "naive"),
-                       confidence_level = .95, verbose = FALSE)
+                       confidence_level = .95, verbose = FALSE,
+                       control = postQuadraticControl(optimMethod = "SGD"))
+nmfit <- mvnQuadratic(y, sigma, testMat = testmat, threshold = NULL, pval_threshold = pthreshold,
+                       estimate_type = c("mle", "naive"),
+                       pvalue_type = c("polyhedral", "hybrid", "naive"),
+                       ci_type = c("polyhedral", "switch", "naive"),
+                       confidence_level = .95, verbose = FALSE,
+                       control = postQuadraticControl(optimMethod = "Nelder-Mead"))
+
 ```
 
 Next, let us evaluate the solution paths of the SGD algorithm:
@@ -126,10 +134,11 @@ plot(sgdfit, type = "solution-path")
 We can also compare the new result to the old one, as the two maximum likelihood estimates should be roughly the same.
 ```{r compare sgd}
 plot(y, coef(sgdfit), col = "red")
-points(y, coef(allfit), col = "blue", pch = 2)
+points(y, coef(allfit), col = "black", pch = 2)
+points(y, coef(nmfit), col = "blue", pch = 3)
 abline(a = 0, b = 1)
-legend("topleft", col = c("blue", "red"), pch = 1:2, 
-       legend = c("exact MLE", "SGD MLE"))
+legend("topleft", col = c("black", "red", "blue"), pch = 1:3, 
+       legend = c("exact MLE", "SGD MLE", "Nelder-Mead"))
 ```
 
 ## Inference for Generalized Linear Models

@@ -5,7 +5,7 @@
 \title{Summarizing psatGLM Fits}
 \usage{
 \method{summary}{psatGLM}(object, estimate_type = NULL, pvalue_type = NULL,
-  ci_type = NULL, confidence_level = NULL)
+  ci_type = NULL, confidence_level = NULL, ...)
 }
 \arguments{
 \item{object}{an object of type \code{\link{psatGLM}}.}

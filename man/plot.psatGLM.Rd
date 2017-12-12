@@ -4,15 +4,15 @@
 \alias{plot.psatGLM}
 \title{Plot results for glmQuadratic Objects}
 \usage{
-\method{plot}{psatGLM}(object, type = c("estimates", "solution_path",
-  "p-values"), ...)
+\method{plot}{psatGLM}(x, type = c("estimates", "solution_path", "p-values"),
+  ...)
 }
 \arguments{
-\item{object}{and object of class \code{mvnQuadratic} or \code{glmQuadratic}.}
-
 \item{type}{the type of plot to be generated.}
 
 \item{...}{additional arguments to be passed to plotting function.}
+
+\item{object}{and object of class \code{mvnQuadratic} or \code{glmQuadratic}.}
 }
 \value{
 a \code{\link[ggplot2]{ggplot2}} figure.

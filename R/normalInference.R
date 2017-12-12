@@ -90,7 +90,7 @@ mvnQuadratic <- function(y, sigma, testMat = "wald",
                          ci_type = c("switch", "polyhedral", "naive"),
                          confidence_level = .95,
                          verbose = TRUE,
-                         control = postQuadraticControl()) {
+                         control = psatControl()) {
   # Getting control variables
   if(class(control) != "quadratic_control") {
     stop("control must be an object of class `quadratic_control'!")
@@ -198,12 +198,17 @@ mvnQuadratic <- function(y, sigma, testMat = "wald",
       mleMu <- optimLambda * y
       solutionPath <- NULL
     } else if(quadtest == "other") {
-      sgdfit <- quadraticSGD(y, sigma, invcov, testMat, threshold,
-                             stepRate = 0.75, stepCoef = sgdStep,
-                             delay = 20, sgdSteps = nsteps, assumeCovergence = 800,
-                             mhIters = 40)
-      mleMu <- sgdfit$mle
-      solutionPath <- sgdfit$solutionPath
+      if(control$optimMethod == "SGD") {
+        sgdfit <- quadraticSGD(y, sigma, invcov, testMat, threshold,
+                               stepRate = 0.75, stepCoef = sgdStep,
+                               delay = 20, sgdSteps = nsteps, assumeCovergence = 800,
+                               mhIters = 40)
+        mleMu <- sgdfit$mle
+        solutionPath <- sgdfit$solutionPath
+      } else {
+        mleMu <- quadraticNM(y, sigma, invcov, testMat, threshold)
+        solutionPath <- NULL
+      }
       optimLambda <- NULL
     }
   } else {
@@ -459,13 +464,14 @@ conditionalDnorm <- function(lambda, y, precision, ncp, threshold) {
   return(condDens)
 }
 
-postQuadraticControl <- function(switchTune = NULL,
+psatControl <- function(switchTune = NULL,
                                  nullMethod = c("RB", "zero-quantile"),
                                  nSamples = NULL,
                                  sgdStep = NULL,
                                  nsteps = 1000,
                                  trueHybrid = FALSE,
-                                 rbIters = NULL) {
+                                 rbIters = NULL,
+                                 optimMethod = c("Nelder-Mead", "SGD")) {
   control <- list()
   control$switchTune <- switchTune
   control$nullMethod <- nullMethod[1]
@@ -474,6 +480,7 @@ postQuadraticControl <- function(switchTune = NULL,
   control$nsteps <- nsteps
   control$trueHybrid <- trueHybrid
   control$rbIters <- rbIters
+  control$optimMethod <- optimMethod[1]
   class(control) <- "quadratic_control"
   return(control)
 }

@@ -7,7 +7,7 @@ export(quadraticRobinsMonroe)
 export(mvnQuadratic)
 export(psatGLM)
 export(aggregatePvalues)
-export(postQuadraticControl)
+export(psatControl)
 export(sampleQuadraticConstraint)
 export(mvnLinear)
 export(sampleLinearTest)
@@ -30,4 +30,13 @@ S3method(plot, psatGLM)
 S3method(print, psatGLM_summary)
 
 import(ggplot2)
-import(truncnorm)
+importFrom("stats", "coef", "glm", "optim", "optimize", "p.adjust",
+             "pchisq", "pnorm", "qchisq", "qnorm", "quantile", "rbinom",
+             "rnorm", "uniroot", "var", "vcov")
+importFrom("utils", "capture.output")
+importFrom("CompQuadForm", "liu")
+
+
+
+
+

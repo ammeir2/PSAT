@@ -4,7 +4,7 @@
 \alias{coef.mvnLinear}
 \title{Retrieve Parameter Estimates from an mvnLinear Fit}
 \usage{
-\method{coef}{mvnLinear}(object, type = NULL)
+\method{coef}{mvnLinear}(object, type = NULL, ...)
 }
 \arguments{
 \item{object}{a \code{\link{mvnLinear}} object.}

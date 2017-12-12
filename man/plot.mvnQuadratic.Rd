@@ -4,7 +4,7 @@
 \alias{plot.mvnQuadratic}
 \title{Plot results for mvnQuadratic Objects}
 \usage{
-\method{plot}{mvnQuadratic}(object, type = c("estimates", "solution-path",
+\method{plot}{mvnQuadratic}(x, type = c("estimates", "solution-path",
   "p-values"), ...)
 }
 \description{

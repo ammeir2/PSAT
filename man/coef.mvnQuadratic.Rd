@@ -4,7 +4,7 @@
 \alias{coef.mvnQuadratic}
 \title{Retrieve Parameter Estimates from an mvnQuadratic Fit}
 \usage{
-\method{coef}{mvnQuadratic}(object, type = NULL)
+\method{coef}{mvnQuadratic}(object, type = NULL, ...)
 }
 \arguments{
 \item{object}{a \code{\link{mvnQuadratic}} object.}

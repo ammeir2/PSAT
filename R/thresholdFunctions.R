@@ -1,11 +1,16 @@
-getQudraticLam <- function(testMat, sigma) {
+getQudraticLam <- function(testMat, sigma, justlam = TRUE) {
   c <- chol(sigma)
   tempmat <- c %*% testMat %*% t(c)
   eig <- eigen(tempmat)
   vec <- eig$vectors
   P <- t(vec)
   lam <- eig$values
-  return(lam)
+  if(justlam) {
+    return(lam)
+  } else {
+    deltamat <- P %*% solve(t(c))
+    return(list(lam = lam, deltamat = deltamat))
+  }
 }
 
 getQuadraticThreshold <- function(quantile, lam) {

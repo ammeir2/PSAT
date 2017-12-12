@@ -4,7 +4,7 @@
 \alias{coef.psatGLM}
 \title{Retrieve Coefficient Estimates from a psatGLM Fit}
 \usage{
-\method{coef}{psatGLM}(object, type = NULL)
+\method{coef}{psatGLM}(object, type = NULL, ...)
 }
 \arguments{
 \item{object}{a \code{\link{psatGLM}} object.}

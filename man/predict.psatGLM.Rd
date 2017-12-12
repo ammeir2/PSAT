@@ -4,7 +4,7 @@
 \alias{predict.psatGLM}
 \title{Retrieve Linear Predictors from a psatGLM Fit}
 \usage{
-\method{predict}{psatGLM}(object, newX = NULL)
+\method{predict}{psatGLM}(object, newX = NULL, ...)
 }
 \arguments{
 \item{object}{a \code{\link{psatGLM}} object.}
