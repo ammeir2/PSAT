@@ -6,3 +6,6 @@ mleExperiments/*
 data analysis/*
 simulations/*
 figures/*
+src/PSAT.so
+src/quadraticSampler.o
+src/RcppExports.o
