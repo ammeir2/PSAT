@@ -89,16 +89,12 @@ Next, let us examine some ways to access the quantities we computed. The simples
 
 ```{r list pval}
 cat("polyhedral pvalues: ", round(allfit$polyPval, 3), "\n")
-cat("global-null pvalues: ", round(allfit$nullPval, 3), "\n")
 cat("hybrid pvalues: ", round(allfit$hybridPval, 3), "\n")
 ```
 
 A second option is to use the `getCI` and `getPval` functions.
 ```{r, getci}
-cat("polyhedral naive: ", round(getPval(allfit, type = "naive"), 3), "\n")
 cat("polyhedral pvalues: ", round(getPval(allfit, type = "polyhedral"), 3), "\n")
-cat("polyhedral hybrid: ", round(getPval(allfit, type = "hybrid"), 3), "\n")
-cat("polyhedral global-null: ", round(getPval(allfit, type = "global-null"), 3), "\n")
 print(round(getCI(allfit, type = "polyhedral"), 3))
 ```
 
