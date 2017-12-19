@@ -14,13 +14,13 @@
 #' of dimension \code{ncol(X) X ncol{X}}.
 #' For a linear test a vector of length \code{ncol(X)}.
 #'
-#' @param test_direction If a linear test is specified and no threshold is specififed
-#' then this will be used to determine the threshold.
+#' @param test_direction see \code{\link{mvnLinear}} for details.
 #'
 #' @param family see \code{\link[stats]{glm}} for details.
 #'
-#' @param resid_sd method for estimating the covariance matrix. Re-fitted least squares
-#' if `naive` or intercept model if `null`.
+#' @param resid_sd method for estimating the covariance matrix or, 
+#' optionaly a standard deviation estimate for linear model. Built in estimation methods are 
+#' Re-fitted least squares if `naive` or intercept model if `null`.
 #'
 #' @param threshold a threshold that the aggregate test must cross in order for the model
 #' to be estimated. Should be a positive scalar for quadratic tests and a vector of size 2
@@ -39,12 +39,6 @@
 #'
 #' @param verbose whether the progress of the inference function should be reported.
 #'
-#' @param switch_tune see \code{\link{mvnQuadratic}} for details.
-#'
-#' @param nSamples see \code{\link{mvnQuadratic}} for details.
-#'
-#' @param verbose see \code{\link{mvnQuadratic}} for details.
-#'
 #' @param control an object of type \code{\link{psatControl}}.
 #'
 #' @details \code{psatGLM} is used to perform inference in generalized
@@ -62,9 +56,9 @@
 #' and the vector of regression coefficients is passed to \code{\link{mvnQuadratic}} or \code{\link{mvnLinear}}
 #' without the intercept.
 #'
-#' @return an object of type \code{psatGLM}
+#' @return An object of type \code{psatGLM}
 #'
-#' @seealso \code{\link{mvnQuadratic}}, \code{\link{getCI}},
+#' @seealso \code{\link{mvnQuadratic}}, \code{\link{mvnLinear}}, \code{\link{getCI}},
 #' \code{\link{getPval}}, \code{\link{plot.psatGLM}},
 #' \code{\link{summary.psatGLM}}, \code{\link{coef.pastGLM}},
 #' \code{\link{predict.psatGLM}}
@@ -122,8 +116,12 @@ psatGLM <- function(X, y, test = "wald",
     } else {
       stop("Variance estimation method not supported!")
     }
-  } else if(is.numeric(resid_sd) & resid_sd >0){
-    sigma <- solve(t(X) %*% X) * resid_sd^2
+  } else if(is.numeric(resid_sd) & resid_sd > 0){
+    if(glm(y[1:3] ~ 1, family = family)$family[[1]] == "gaussian") {
+      sigma <- solve(t(X) %*% X) * resid_sd^2
+    } else {
+      stop("If family is not gaussian, then resid_sd must be either 'null' or 'naive'.")
+    }
   } else {
     stop("Invalid resid_sd value!")
   }
@@ -139,12 +137,13 @@ psatGLM <- function(X, y, test = "wald",
   } else if(testType == "linear") {
     mvnfit <- mvnLinear(y = naiveBeta, sigma = sigma, contrast = test,
                         threshold = threshold, pval_threshold = pval_threshold,
-                        selection = test_direction,
+                        test_direction = test_direction,
                         estimate_type = estimate_type,
                         pvalue_type = pvalue_type,
                         ci_type = ci_type,
                         confidence_level = confidence_level,
-                        verbose = verbose, trueHybrid = TRUE)
+                        verbose = verbose, 
+                        control = control)
   }
 
   results <- mvnfit

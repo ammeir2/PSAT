@@ -21,5 +21,5 @@ a vector of p-values.
 \description{
 A function for retrieving selection adjusted p-values
 obtained after aggregate testing using the \code{\link{mvnQuadratic}},
-\code{\link{glmQuadratic}} or \code{\link{aggregatePvalues}} functions.
+\code{\link{mvnLinear}}, \code{\link{psatGLM}} or \code{\link{aggregatePvalues}} functions.
 }

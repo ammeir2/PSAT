@@ -75,8 +75,13 @@ getCI <- function(object, type = NULL, confidence_level = NULL, switchTune = NUL
     if(!recompute & !is.null(object$switchCI)) {
       return(object$switchCI)
     } else {
+      if(aggregateTest == "linear") {
+        testmat <- object$contrast
+      } else {
+        testmat <- object$testMat
+      }
       switch <- getSwitchCI(object$naiveMu, object$sigma,
-                            object$testMat, object$threshold,
+                            testmat, object$threshold,
                             object$pthreshold, confidence_level,
                             object$quadlam, t2 = switchTune * object$pthreshold,
                             object$testStat, object$hybridPval,
@@ -148,7 +153,7 @@ getCI <- function(object, type = NULL, confidence_level = NULL, switchTune = NUL
 #'
 #' @description A function for retrieving selection adjusted p-values
 #' obtained after aggregate testing using the \code{\link{mvnQuadratic}},
-#' \code{\link{glmQuadratic}} or \code{\link{aggregatePvalues}} functions.
+#' \code{\link{mvnLinear}}, \code{\link{psatGLM}} or \code{\link{aggregatePvalues}} functions.
 #'
 #' @param object an object of class \code{\link{mvnQuadratic}},
 #' \code{\link{glmQuadratic}}, or \code{\link{aggregatePvalues}}.
@@ -164,36 +169,39 @@ getPval <- function(object, type = NULL) {
   # If aggregate pvalues --------------
   if(class(object)[1] == "aggregatePvalues") {
     return(object$p2C)
+  } else if("mvnQuadratic" %in% class(object)) {
+    return(getPvalQuadratic(object, type = type))
+  } else if("mvnLinear" %in% class(object)) {
+    return(getPvalLinear(object, type = type))
+  } else {
+    stop("Incorrect object type")
   }
+}
 
-  # Checking arguments ---------
-  if(!any(class(object) %in% c("mvnQuadratic", "mvnLinear", "psatGLM"))) {
-    stop("Invalid object type!")
-  }
-
+getPvalQuadratic <- function(object, type = NULL) {
   if("psatGLM" %in% class(object)) {
     object$muhat <- object$betahat[-1]
     object$naiveMu <- object$naiveBeta[-1]
   }
-
+  
   aggregateTest <- object$testType
-
+  
   type <- type[1]
   if(is.null(type)) {
     type <- object$pvalue_type[1]
   }
-
+  
   # Polyhedral ----------------------
   if(type == "polyhedral") {
     if(is.null(object$polyPval)) {
       return(getPolyCI(object$naiveMu, object$sigma, object$testMat,
-                object$threshold, confidence_level, FALSE,
-                test = aggregateTest)$pval)
+                       object$threshold, confidence_level, FALSE,
+                       test = aggregateTest)$pval)
     } else {
       return(object$polyPval)
     }
   }
-
+  
   # Hybrid ------------------
   if(type == "hybrid") {
     if(is.null(object$nullSample)) {
@@ -208,7 +216,7 @@ getPval <- function(object, type = NULL) {
     }
     return(pmin(2 * pmin(polyPval, object$nullPval), 1))
   }
-
+  
   # Global Null ----------------
   if(type == "global-null") {
     if(!is.null(object$nullPval)) {
@@ -217,12 +225,12 @@ getPval <- function(object, type = NULL) {
       stop("Please re-run fitting function with `hybrid` or `global-null` pvalue_type option.")
     }
   }
-
+  
   # Naive ---------------
   if(type == "naive") {
     return(object$naivePval)
   }
-
+  
   # MLE --------------
   if(type == "mle") {
     if(is.null(object$mlePval)) {
@@ -231,7 +239,73 @@ getPval <- function(object, type = NULL) {
       return(object$mlePval)
     }
   }
+  
+  # Oopps --------
+  stop("Unsupported pvalue type!")
+}
 
+getPvalLinear <- function(object, type = NULL) {
+  if("psatGLM" %in% class(object)) {
+    object$muhat <- object$betahat[-1]
+    object$naiveMu <- object$naiveBeta[-1]
+  }
+  
+  aggregateTest <- object$testType
+  
+  type <- type[1]
+  if(is.null(type)) {
+    type <- object$pvalue_type[1]
+  }
+  
+  # Polyhedral ----------------------
+  if(type == "polyhedral") {
+    if(is.null(object$polyPval)) {
+      return(getPolyCI(object$naiveMu, object$sigma, object$contrast,
+                       object$threshold, confidence_level, FALSE,
+                       test = "linear")$pval)
+    } else {
+      return(object$polyPval)
+    }
+  }
+  
+  # Hybrid ------------------
+  if(type == "hybrid") {
+    if(is.null(object$nullSample)) {
+      stop("Please re-run fitting function with `hybrid` or `global-null` pvalue_type option.")
+    }
+    if(is.null(object$polyPval)) {
+      polyPval <- getPolyCI(object$naiveMu, object$sigma, object$testMat,
+                            object$threshold, confidence_level, FALSE,
+                            test = aggregateTest)$pval
+    } else {
+      polyPval <- object$polyPval
+    }
+    return(pmin(2 * pmin(polyPval, object$nullPval), 1))
+  }
+  
+  # Global Null ----------------
+  if(type == "global-null") {
+    if(!is.null(object$nullPval)) {
+      return(object$nullPval)
+    } else {
+      stop("Please re-run fitting function with `hybrid` or `global-null` pvalue_type option.")
+    }
+  }
+  
+  # Naive ---------------
+  if(type == "naive") {
+    return(object$naivePval)
+  }
+  
+  # MLE --------------
+  if(type == "mle") {
+    if(is.null(object$mlePval)) {
+      stop("Please re-run fitting function with `mle` pvalue_type option.")
+    } else {
+      return(object$mlePval)
+    }
+  }
+  
   # Oopps --------
   stop("Unsupported pvalue type!")
 }

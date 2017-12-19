@@ -27,6 +27,7 @@ S3method(predict, mvnQuadratic)
 S3method(predict, psatGLM)
 S3method(plot, mvnQuadratic)
 S3method(plot, psatGLM)
+S3method(plot, mvnLinear)
 S3method(print, psatGLM_summary)
 
 import(ggplot2)
@@ -35,6 +36,7 @@ importFrom("stats", "coef", "glm", "optim", "optimize", "p.adjust",
              "rnorm", "uniroot", "var", "vcov")
 importFrom("utils", "capture.output")
 importFrom("CompQuadForm", "liu")
+importFrom("truncnorm", "rtruncnorm")
 
 
 

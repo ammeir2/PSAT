@@ -1,7 +1,7 @@
 ---
 title: "Inference After Quadratic Aggregate Testing"
 author: "Amit Meir"
-date: "10/3/2017"
+date: "12/19/2017"
 output:
   html_document: default
   pdf_document: default
@@ -61,7 +61,7 @@ allfit <- mvnQuadratic(y, sigma, testMat = "wald", threshold = NULL, pval_thresh
                        pvalue_type = c("hybrid", "polyhedral", "naive"),
                        ci_type = c("switch", "polyhedral", "naive"),
                        confidence_level = .95, verbose = TRUE,
-                       control = postQuadraticControl(trueHybrid = TRUE, rbIters = 5000, nSamples = 10^4))
+                       control = psatControl(trueHybrid = TRUE, rbIters = 5000, nSamples = 10^4))
 
 ```
 
@@ -115,13 +115,13 @@ sgdfit <- mvnQuadratic(y, sigma, testMat = testmat, threshold = NULL, pval_thres
                        pvalue_type = c("polyhedral", "hybrid", "naive"),
                        ci_type = c("polyhedral", "switch", "naive"),
                        confidence_level = .95, verbose = FALSE,
-                       control = postQuadraticControl(optimMethod = "SGD"))
+                       control = psatControl(optimMethod = "SGD"))
 nmfit <- mvnQuadratic(y, sigma, testMat = testmat, threshold = NULL, pval_threshold = pthreshold,
                        estimate_type = c("mle", "naive"),
                        pvalue_type = c("polyhedral", "hybrid", "naive"),
                        ci_type = c("polyhedral", "switch", "naive"),
                        confidence_level = .95, verbose = FALSE,
-                       control = postQuadraticControl(optimMethod = "Nelder-Mead"))
+                       control = psatControl(optimMethod = "Nelder-Mead"))
 
 ```
 
@@ -187,7 +187,7 @@ glmfit <- psatGLM(X, y, test = testmat, family = "binomial",
                   pvalue_type = c("hybrid", "polyhedral", "naive"),
                   ci_type = c("switch", "polyhedral", "naive"),
                   confidence_level = .95, verbose = TRUE, 
-                  control = postQuadraticControl(trueHybrid = TRUE))
+                  control = psatControl(trueHybrid = TRUE))
 ```
 
 ```{r}
@@ -195,7 +195,7 @@ plot(glmfit, type = "estimates", true = beta)
 plot(glmfit, type = "p-values", adjust = "none", threshold = c(0.05, 0.05 / p))
 ```
 
-Notice that the naive confidence intervals miss three of the true coefficients and that the switching regime confidence intervals manage to identify one of the coefficients as being non-zero. The `glmQuadratic` function also provides some standard regression interfaces such as the `coef`, `predict` and `summary` functions. When reporting confidence intervals, pvalues or summaries, the reported quantities will be the first listed in the original function call, unless specified otherwise.  
+Notice that the naive confidence intervals miss three of the true coefficients and that the switching regime confidence intervals manage to identify one of the coefficients as being non-zero. The `psatGLM` function also provides some standard regression interfaces such as the `coef`, `predict` and `summary` functions. When reporting confidence intervals, pvalues or summaries, the reported quantities will be the first listed in the original function call, unless specified otherwise.  
 
 ```{r}
 print(round(rbind(coef(glmfit, type = "naive"), coef(glmfit, type = "mle"))[, 1:10], 3))

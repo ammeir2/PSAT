@@ -8,7 +8,7 @@ mvnQuadratic(y, sigma, testMat = "wald", threshold = NULL,
   pval_threshold = 0.05, estimate_type = c("mle", "naive"),
   pvalue_type = c("hybrid", "polyhedral", "naive"), ci_type = c("switch",
   "polyhedral", "naive"), confidence_level = 0.95, verbose = TRUE,
-  control = postQuadraticControl())
+  control = psatControl())
 }
 \arguments{
 \item{y}{the observed normal vector.}
@@ -35,12 +35,7 @@ The first method listed will be will be used as the default method.}
 
 \item{verbose}{whether to report on the progress of the computation.}
 
-\item{switchTune}{tuning method for computing the regime switching confidence
-intervals}
-
-\item{nSamples}{number of samples to take from the truncated global null distribution.
-This only applies if the \code{global-null}, \code{switch} or \code{hybrid} options
-are specified.}
+\item{control}{an object of type \code{\link{psatControl}}.}
 }
 \value{
 An object of class \code{mvnQuadratic}.
@@ -64,8 +59,9 @@ appropriate dimension.
 If \code{estimate_type} includes the string "mle" then \code{mvnQuadratic}
 will compute the conditional maximum likelihood estimator for the mean vector,
 which is typically a shrinkage estimator.  If \code{testMat = "wald"} then the
-computation is performed via an efficient line-search method. Otherwise, a
-stochastic gradient method is used.
+computation is performed via an efficient line-search method. Otherwise, 
+the computation is performed via the Nelder-Mead method where the probability
+of selection is approximated using the \code{\link[CompQuadForm]{liu}} function.
 
 The \code{threshold} parameter specifies the constant \eqn{c>0} which is used
 to threshold the aggregate test. It takes precedence over \code{pval_threshold} if both
@@ -84,18 +80,9 @@ magnitude of \eqn{\mu}. However it is less robust to the misspecification of the
 of \eqn{y} than the "polyhedral" method. The confidence interval methods are similar to the p-values ones,
 with the Regime switching
 confidence intervals ("switch") serving a simialr purpose as the "hybrid" method.
-
-The \code{switchTune} field is used to specifiy how the Regime Switching confidence
-intervals should be used. Let \eqn{t1} be the quantile of the aggregate test used for
-screening (\code{pval_threshold}) and let \eqn{\alpha} equal one minus \code{confidence_level}.
-The regime switching confidence intervals work by performing a secondary aggregate test at
-at a quantile \eqn{\gamma} and if the second test is rejected then unadjusted confidence
-intervals at a level \eqn{1 - \alpha} are reported. If the second test is not rejected
-then global-null confidence intervals at a level \eqn{1 - \alpha + \gamma} are reported.
-If \code{switchTune} is set to "sqrd" then \eqn{\gamma = t1 \alpha^{2}} and
-\eqn{\gamma = t1 \alpha/2} if \code{switchTune} is set to "half".
 }
 \seealso{
 \code{\link{getCI}}, \code{\link{getPval}},
-\code{\link{coef.mvnQuadratic}}, \code{\link{plot.mvnQuadratic}}.
+\code{\link{coef.mvnQuadratic}}, \code{\link{plot.mvnQuadratic}},
+\code{\link{psatGLM}}.
 }

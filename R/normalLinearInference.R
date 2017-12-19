@@ -1,14 +1,78 @@
+#' Inference for Normal Means after Aggregate Testing with a Linear Test
+#'
+#' @description \code{mvnLinear} is used to estimate a normal means model that was selected based
+#' on a single linear aggregate test of the form:
+#' \deqn{a'y > u or a'y < l,} 
+#' \deqn{l < u.}
+#'
+#' @param y the observed normal vector.
+#'
+#' @param sigma the covariance matrix of \code{y}.
+#'
+#' @param contrast the test contrast \eqn{a} of size \code{length(y)} used in the aggregate test
+#'
+#' @param threshold the threshold used in the aggregate test, either a vector of size two for the lower and upper
+#' thresholds \eqn{u, l}, or a single number.
+#'
+#' @param pval_threshold the signficance level of the aggregate test.
+#' Overrided by \code{threshold} if both are provided.
+#' 
+#' @param test_direction whether the linear test is one-sided or two-sided. Will be used if the provided threshold 
+#' is a scalar, if lower then the tests will be \eqn{a'y < threshold} and if upper then the test will be \eqn{a'y > threshold}.
+#'
+#' @param estimate_type see \code{\link{mvnQuadratic}} for details.
+#'
+#' @param pvalue_type see \code{\link{mvnQuadratic}} for details.
+#'
+#' @param ci_type see \code{\link{mvnQuadratic}} for details.
+#'
+#' @param confidence_level the confidence level for constructing confidencei intervals.
+#'
+#' @param verbose whether to report on the progress of the computation.
+#' 
+#' @param control an object of type \code{\link{psatControl}}.
+#'
+#' @details The function is used to perform inference for normal mean vectors
+#' that were selected based on a single linear aggregate test. To be exact, suppose
+#' that \eqn{y ~ N(\mu,\Sigma)} and that we are interested in estimating \eqn{\mu}
+#' only if we can determine that \eqn{\mu != 0} using an aggregate test of the form:
+#' \eqn{a'y <l} or \eqn{a'y > u} for some predetermined constants \eqn{a, l, u}.
+#'
+#' The \code{threshold} parameter specifies the constants \eqn{l<u} which are used
+#' to threshold the aggregate test. If only a single number is provided, then the threshold
+#' will be set according to test_direction: 
+#' \itemize{
+#' \item lower: a'y < threshold
+#' \item upper: a'y > threshold
+#' \item two-sided a'y < -threshold, or a'y > threshold
+#' }
+#' The \code{threshold} parameter takes precedence over \code{pval_threshold} if both
+#' are specified. 
+#'
+#' See \code{\link{mvnQuadratic}} for details regarding the available inference methods.
+#'
+#' @return An object of class \code{mvnLinear}.
+#'
+#' @seealso \code{\link{mvnQuadratic}}, \code{\link{psatGLM}}, \code{\link{getCI}},
+#' \code{\link{getPval}}.
 mvnLinear <- function(y, sigma, contrast,
-                      threshold, pval_threshold,
-                      selection = c("two_sided", "lower", "upper"),
+                      threshold = NULL, pval_threshold = 0.05,
+                      test_direction = c("two-sided", "lower", "upper"),
                       estimate_type = c("mle", "naive"),
                       pvalue_type = c("hybrid", "polyhedral", "naive"),
                       ci_type = c("switch", "polyhedral", "naive"),
                       confidence_level = .95,
                       verbose = TRUE,
-                      nSamples = NULL, trueHybrid = FALSE) {
+                      control = psatControl()) {
 
+  # Getting control parameters ------
+  switchTune <- control$switchTune
+  nullMethod <- control$nullMethod
+  nSamples <- control$nSamples
+  trueHybrid <- control$trueHybrid
+  rbIters <- control$rbIters
 
+  # Checking input ----
   checkPvalues(pvalue_type)
   checkCI(ci_type)
 
@@ -26,30 +90,34 @@ mvnLinear <- function(y, sigma, contrast,
   confidence_level <- 1 - confidence_level
 
   # Setting threshold ----------------------------
-  if(!any(selection %in% c("two-sided", "lower", "upper")) &
-     length(threshold) < 2) {
-    stop("Selection must be one of `two-sided', `lower' or `upper'!
+  if(!any(test_direction %in% c("two-sided", "lower", "upper"))) {
+     if(missing(threshold)) {
+       stop("test_direction must be one of `two-sided', `lower' or `upper'!
          (or a threshold of length 2 must be provided)")
+     } else if(length(threshold) < 2) {
+       stop("test_direction must be one of `two-sided', `lower' or `upper'!
+         (or a threshold of length 2 must be provided)")
+     }
   }
 
   p <- length(y)
   contrastVar <- as.numeric(t(contrast) %*% sigma %*% contrast)
-  selection <- selection[1]
-  if(is.null(threshold)) {
+  test_direction <- test_direction[1]
+  if(missing(threshold) | is.null(threshold)) {
     if(pthreshold < 0 | pthreshold > 1) {
       stop("If a threshold is not provided, then pval_threshold must be between 0 and 1!")
     } else {
-      if(selection == "two-sided") {
+      if(test_direction == "two-sided") {
         threshold <- qnorm(1 - pval_threshold/2, sd = sqrt(contrastVar))
         threshold <- c(-threshold, threshold)
-      } else if(selection == "lower") {
+      } else if(test_direction == "lower") {
         threshold <- qnorm(pval_threshold, sd = sqrt(contrastVar))
         threshold <- c(threshold, Inf)
-      } else if(selection == "upper") {
+      } else if(test_direction == "upper") {
         threshold <- qnorm(1 - pval_threshold, sd = sqrt(contrastVar))
         threshold <- c(-Inf, threshold)
       } else {
-        stop("If threshold is not provided then selection must be one of `two-sided'
+        stop("If threshold is not provided then test_direction must be one of `two-sided'
              `lower' or `upper'!")
       }
     }
@@ -58,11 +126,11 @@ mvnLinear <- function(y, sigma, contrast,
   if(length(threshold) > 2) {
     stop("The length of threshold must be either 1 or 2!")
   } else if(length(threshold) == 1) {
-    if(selection == "two-sided") {
-      warning(paste("Threshold of length one provided for a two sided selection rule.
-                    Selection rule assumed to be contrast < -abs(threshold) or contrast > abs(threshold)"))
+    if(test_direction == "two-sided") {
+      warning(paste("Threshold of length one provided for a two sided test_direction rule.
+                    test_direction rule assumed to be contrast < -abs(threshold) or contrast > abs(threshold)"))
       threshold <- c(-abs(threshold), abs(threshold))
-    } else if(selection == "lower") {
+    } else if(test_direction == "lower") {
       threshold <- c(threshold, Inf)
     } else {
       threshold <- c(-Inf, threshold)
@@ -73,14 +141,19 @@ mvnLinear <- function(y, sigma, contrast,
   upperProb <- pnorm(threshold[2], sd = sqrt(contrastVar), lower.tail = FALSE)
   pthreshold <- lowerProb + upperProb
 
-  # Validating selection --------------
+  # Validating test_direction --------------
   y <- as.numeric(y)
   testStat <- sum(y * contrast)
   if(testStat > threshold[1] & testStat < threshold[2]) {
     stop("Test statistic did not cross threshold!")
   }
 
-  t2 <- confidence_level^2 * pthreshold
+  # Regime switching CI tuning.
+  if(is.null(switchTune)) {
+    t2 <- confidence_level^2 * pthreshold
+  } else {
+    t2 <- switchTune * pthreshold
+  }
 
   # Computing MLE -------------------------
   if("mle" %in% estimate_type) {
@@ -139,12 +212,12 @@ mvnLinear <- function(y, sigma, contrast,
   if(pvalue_type[1] == "hybrid") {
     pvalue <- hybridPval
   }
-
+  
   # Null Distribution Based CIs ---------------
   if(("global-null" %in% ci_type)) {
     nullCI <- linearRB(y, sigma, contrast, threshold,
-                       confidence_level, rbIters = NULL,
-                       variables = NULL, computeFull = TRUE)
+                       confidence_level, rbIters = rbIters,
+                       variables = NULL, computeFull = trueHybrid)
   } else {
     nullCI <- NULL
   }
@@ -183,7 +256,8 @@ mvnLinear <- function(y, sigma, contrast,
   if("hybrid" %in% ci_type) {
     if(verbose) print("Computing Hybrid CIs!")
     hybridCI <- getHybridCI(y, sigma, contrast, threshold, pthreshold, confidence_level,
-                            hybridPval = hybridPval, trueHybrid, rbIters,
+                            hybridPval = hybridPval, computeFull = trueHybrid, 
+                            rbIters = rbIters,
                             test = "linear")
   } else {
     hybridCI <- NULL

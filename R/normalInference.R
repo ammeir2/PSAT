@@ -26,14 +26,9 @@
 #'
 #' @param confidence_level the confidence level for constructing confidencei intervals.
 #'
-#' @param switchTune tuning method for computing the regime switching confidence
-#'  intervals
-#'
-#' @param nSamples number of samples to take from the truncated global null distribution.
-#'  This only applies if the \code{global-null}, \code{switch} or \code{hybrid} options
-#'  are specified.
-#'
 #' @param verbose whether to report on the progress of the computation.
+#'
+#' @param control an object of type \code{\link{psatControl}}.
 #'
 #' @details The function is used to perform inference for normal mean vectors
 #' that were selected based on a single quadratic aggregate test. To be exact, suppose
@@ -48,14 +43,15 @@
 #' If \code{estimate_type} includes the string "mle" then \code{mvnQuadratic}
 #' will compute the conditional maximum likelihood estimator for the mean vector,
 #' which is typically a shrinkage estimator.  If \code{testMat = "wald"} then the
-#' computation is performed via an efficient line-search method. Otherwise, a
-#' stochastic gradient method is used.
-#'
+#' computation is performed via an efficient line-search method. Otherwise, 
+#' the computation is performed via the Nelder-Mead method where the probability
+#' of selection is approximated using the \code{\link[CompQuadForm]{liu}} function.
+#' 
 #' The \code{threshold} parameter specifies the constant \eqn{c>0} which is used
 #' to threshold the aggregate test. It takes precedence over \code{pval_threshold} if both
 #' are specified. We use the \code{\link[CompQuadForm]{liu}} function to compute the the
 #' threshold if a non-Wald test is used.
-#'
+#' 
 #' \code{mvnQuadratic} offers several options for computing p-values. The "global-null"
 #' method relies on comparing the magnitude of \eqn{y} to samples from the truncated
 #' global-null distribution. This method is powerful when \eqn{\mu} is sparse and its
@@ -69,20 +65,11 @@
 #' with the Regime switching
 #' confidence intervals ("switch") serving a simialr purpose as the "hybrid" method.
 #'
-#' The \code{switchTune} field is used to specifiy how the Regime Switching confidence
-#' intervals should be used. Let \eqn{t1} be the quantile of the aggregate test used for
-#' screening (\code{pval_threshold}) and let \eqn{\alpha} equal one minus \code{confidence_level}.
-#' The regime switching confidence intervals work by performing a secondary aggregate test at
-#' at a quantile \eqn{\gamma} and if the second test is rejected then unadjusted confidence
-#' intervals at a level \eqn{1 - \alpha} are reported. If the second test is not rejected
-#' then global-null confidence intervals at a level \eqn{1 - \alpha + \gamma} are reported.
-#' If \code{switchTune} is set to "sqrd" then \eqn{\gamma = t1 \alpha^{2}} and
-#' \eqn{\gamma = t1 \alpha/2} if \code{switchTune} is set to "half".
-#'
 #' @return An object of class \code{mvnQuadratic}.
 #'
 #' @seealso \code{\link{getCI}}, \code{\link{getPval}},
-#' \code{\link{coef.mvnQuadratic}}, \code{\link{plot.mvnQuadratic}}.
+#' \code{\link{coef.mvnQuadratic}}, \code{\link{plot.mvnQuadratic}},
+#' \code{\link{psatGLM}}.
 mvnQuadratic <- function(y, sigma, testMat = "wald",
                          threshold = NULL, pval_threshold = 0.05,
                          estimate_type = c("mle", "naive"),
@@ -464,6 +451,30 @@ conditionalDnorm <- function(lambda, y, precision, ncp, threshold) {
   return(condDens)
 }
 
+#' Creates a list of parameters for use with PSAT inference functions
+#' 
+#' Creates a list with additional parameters for use with 
+#' \code{\link{mvnQuadratic}}, \code{\link[psat]{mvnLinear}}, and \code{\link[PSAT]{psatGLM}}.
+#' 
+#' @param switchTune tuning parameter for regime switching confidence intervals, 
+#' should be a number between 0 and confidence_level.
+#' 
+#' @param nullMethod method for compute global-null confidence intervals. Robins-Monroe (RB) should be used.
+#' 
+#' @param nSamples number of samples to be taken from the null distribution.
+#' 
+#' @param sgdStep number of stochastic gradient steps to take, only applicable for 
+#' non-wald quadratic tests when \code{optimMethod} "SGD" is used.
+#' 
+#' @param trueHybrid whether Robins-Monroe computation should be performed for computing 
+#' confidence intervals for all confidence intervals or only when they may improve power.
+#' 
+#' @param rbIters number of steps to take when computing confidence intervals with the Robins-Monroe
+#' procedure.
+#' 
+#' @param optimMethod optimization method to be used when computing the conditional MLE in
+#' in inference after testing with a non-wald aggregate test. Nelder-Mead as implemented in the 
+#' \code{\link[stats]{optim}} function.
 psatControl <- function(switchTune = NULL,
                                  nullMethod = c("RB", "zero-quantile"),
                                  nSamples = NULL,

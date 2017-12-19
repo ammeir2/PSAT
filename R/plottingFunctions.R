@@ -33,7 +33,7 @@ plot.psatGLM <- function(x, type = c("estimates", "solution_path", "p-values"), 
   return(plot(object, type = type, ...))
 }
 
-#' Plot results for mvnQuadratic Objects
+#' Plot results of mvnQuadratic Analyisis
 #'
 #' @description see \code{\link{plot.glmQuadratic}} for details.
 plot.mvnQuadratic <- function(x, type = c("estimates", "solution-path", "p-values"), ...) {
@@ -53,6 +53,18 @@ plot.mvnQuadratic <- function(x, type = c("estimates", "solution-path", "p-value
 
 
   stop("Unknown plotting method!")
+}
+
+#' Plot results of mvnLinear Analyisis
+#'
+#' @description see \code{\link{plot.glmQuadratic}} for details.
+plot.mvnLinear <- function(x, type = c("estimates", "solution-path", "p-values"), ...) {
+  type <- type[1]
+  if(!(type %in% c("estimates", "p-values"))) {
+    stop("type not supported!")
+  }
+  
+  return(plot.mvnQuadratic(x, type = type, ...))
 }
 
 #' Plotting Functions for Post Aggregate Testing Inference Results
