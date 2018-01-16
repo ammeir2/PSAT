@@ -196,7 +196,7 @@ getPvalQuadratic <- function(object, type = NULL) {
     if(is.null(object$polyPval)) {
       return(getPolyCI(object$naiveMu, object$sigma, object$testMat,
                        object$threshold, confidence_level, FALSE,
-                       test = aggregateTest)$pval)
+                       test = aggregateTest, truncPmethod = truncPmethod)$pval)
     } else {
       return(object$polyPval)
     }

@@ -17,7 +17,7 @@ sampleQuadraticConstraint <- function(mu, sigma, threshold, testMat,
   precision <- solve(sigma)
   mu <- sqrtTestMat %*% mu
   if(!is.null(init)) {
-    init <- sqrtTestMat %*% mu
+    init <- sqrtTestMat %*% init
   } else {
     init <- mu
   }

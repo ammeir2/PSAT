@@ -1,17 +1,18 @@
 getPolyCI <- function(y, sigma, testMat, threshold, confidence_level,
-                      computeCI = TRUE, test = "quadratic") {
+                      computeCI = TRUE, test = "quadratic",
+                      truncPmethod = "symmetric") {
   etaMat <- diag(length(y))
   if(test == "quadratic") { # Quadratic
     polyhedral <- apply(etaMat, 2, polyhedral.workhorse,
                         u = y, sigma = sigma, testMat = testMat,
                         threshold = threshold, computeCI = computeCI,
-                        alpha = confidence_level)
+                        alpha = confidence_level, truncPmethod = truncPmethod)
     noCorrection <- sapply(polyhedral, function(x) x$noCorrection)
   } else if(test == "linear") { # Linear
     polyhedral <- apply(etaMat, 2, linearPolyhedral,
                         u = y, sigma = sigma, a = testMat,
                         threshold = threshold, computeCI = computeCI,
-                        alpha = confidence_level)
+                        alpha = confidence_level, truncPmethod = truncPmethod)
     noCorrection <- rep(FALSE, length(y))
   }
   polyPval <- sapply(polyhedral, function(x) x$pval)

@@ -37,6 +37,8 @@ importFrom("stats", "coef", "glm", "optim", "optimize", "p.adjust",
 importFrom("utils", "capture.output")
 importFrom("CompQuadForm", "liu")
 importFrom("truncnorm", "rtruncnorm")
+importFrom("truncnorm", "qtruncnorm")
+importFrom("truncnorm", "etruncnorm")
 
 
 

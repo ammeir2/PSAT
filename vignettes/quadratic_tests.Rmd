@@ -56,12 +56,17 @@ Our threshold is `r round(threshold, 1)` and the realized test statistic is `r r
 
 ```{r allfit, cache=TRUE}
 library(PSAT)
-allfit <- mvnQuadratic(y, sigma, testMat = "wald", threshold = NULL, pval_threshold = pthreshold,
+control <- psatControl(trueHybrid = TRUE, 
+                       rbIters = 5000, 
+                       nSamples = 10^4, 
+                       truncPmethod = "UMPU")
+allfit <- mvnQuadratic(y, sigma, testMat = "wald", 
+                       threshold = NULL, pval_threshold = pthreshold,
                        estimate_type = c("mle", "naive"),
                        pvalue_type = c("hybrid", "polyhedral", "naive"),
                        ci_type = c("switch", "polyhedral", "naive"),
                        confidence_level = .95, verbose = TRUE,
-                       control = psatControl(trueHybrid = TRUE, rbIters = 5000, nSamples = 10^4))
+                       control = control)
 
 ```
 

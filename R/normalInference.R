@@ -90,6 +90,7 @@ mvnQuadratic <- function(y, sigma, testMat = "wald",
   nsteps <-  control$nsteps
   trueHybrid <- control$trueHybrid
   rbIters <- control$rbIters
+  truncPmethod <- control$truncPmethod
 
   # Validating parameters --------------------
   if(!(nullMethod %in% c("zero-quantile", "RB"))) {
@@ -219,6 +220,7 @@ mvnQuadratic <- function(y, sigma, testMat = "wald",
     if(verbose) print(paste("Sampling from null distribution! (", nSamples, " samples)", sep = ""))
     nullMu <- rep(0, length(y))
     nullSample <- sampleQuadraticConstraint(nullMu, sigma,
+                                            init = y,
                                             threshold, testMat,
                                             sampSize = nSamples,
                                             burnin = 1000,
@@ -239,7 +241,8 @@ mvnQuadratic <- function(y, sigma, testMat = "wald",
   # Computing polyhedral p-values/CIs ---------------------
   if(any(c("polyhedral", "hybrid") %in% pvalue_type) | "polyhedral" %in% ci_type) {
     if(verbose) print("Computing polyhedral p-values/CIs!")
-    polyResult <- getPolyCI(y, sigma, testMat, threshold, confidence_level)
+    polyResult <- getPolyCI(y, sigma, testMat, threshold, confidence_level,
+                            truncPmethod = truncPmethod)
     polyPval <- polyResult$pval
     polyCI <- polyResult$ci
     if(pvalue_type[1] == "polyhedral") pvalue <- polyPval
@@ -476,13 +479,14 @@ conditionalDnorm <- function(lambda, y, precision, ncp, threshold) {
 #' in inference after testing with a non-wald aggregate test. Nelder-Mead as implemented in the 
 #' \code{\link[stats]{optim}} function.
 psatControl <- function(switchTune = NULL,
-                                 nullMethod = c("RB", "zero-quantile"),
-                                 nSamples = NULL,
-                                 sgdStep = NULL,
-                                 nsteps = 1000,
-                                 trueHybrid = FALSE,
-                                 rbIters = NULL,
-                                 optimMethod = c("Nelder-Mead", "SGD")) {
+                        nullMethod = c("RB", "zero-quantile"),
+                        nSamples = NULL,
+                        sgdStep = NULL,
+                        nsteps = 1000,
+                        trueHybrid = FALSE,
+                        rbIters = NULL,
+                        optimMethod = c("Nelder-Mead", "SGD"),
+                        truncPmethod = c("UMPU", "symmetric")) {
   control <- list()
   control$switchTune <- switchTune
   control$nullMethod <- nullMethod[1]
@@ -492,6 +496,7 @@ psatControl <- function(switchTune = NULL,
   control$trueHybrid <- trueHybrid
   control$rbIters <- rbIters
   control$optimMethod <- optimMethod[1]
+  control$truncPmethod <- truncPmethod[1]
   class(control) <- "quadratic_control"
   return(control)
 }
