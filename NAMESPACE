@@ -1,16 +1,12 @@
-#exportPattern("^[[:alpha:]]+")
 importFrom(Rcpp, sourceCpp)
 useDynLib(PSAT)
 
-export(quadraticRobinsMonroe)
-
-export(mvnQuadratic)
 export(psatGLM)
 export(aggregatePvalues)
 export(psatControl)
 export(sampleQuadraticConstraint)
 export(mvnLinear)
-export(sampleLinearTest)
+export(mvnQuadratic)
 
 export(getCI)
 export(getPval)
@@ -31,6 +27,7 @@ S3method(plot, mvnLinear)
 S3method(print, psatGLM_summary)
 
 import(ggplot2)
+import(magrittr)
 importFrom("stats", "coef", "glm", "optim", "optimize", "p.adjust",
              "pchisq", "pnorm", "qchisq", "qnorm", "quantile", "rbinom",
              "rnorm", "uniroot", "var", "vcov")

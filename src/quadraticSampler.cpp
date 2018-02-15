@@ -3,6 +3,14 @@ using namespace Rcpp;
 
 const double PIPI = 3.141592653589793238463 ;
 
+void printVec(NumericVector x) { 
+  for(int i = 0 ; i < x.length() ; i++) {
+    Rcpp::Rcout<<x[i]<<" " ; 
+  }
+  Rcpp::Rcout<<"\n" ; 
+  return ; 
+}
+
 double sampleUnivTruncNorm(double mu, double sd, double threshold) {
   double u = runif(1)[0] ;
   double phiThreshold, sample ;
@@ -128,21 +136,22 @@ void innerProduct(NumericVector result, NumericMatrix x, NumericVector y) {
 }
 
 // [[Rcpp::export]]
-double quadraticRobinsMonroe(int var, bool upper, double alpha,
-                                    double observed, double initU,
-                                    double threshold,
-                                    NumericMatrix sqrtTestMat,
-                                    NumericMatrix invSqrtTestMat,
-                                    NumericMatrix sampPrecision,
-                                    double stepSize,
-                                    int burnin, int mhiters, int rbIters) {
+double quadraticRobinsMonroe(NumericVector eta, 
+                             NumericVector addVec, NumericVector multVec,
+                             bool upper, double alpha,
+                             double observed, double initU,
+                             double threshold,
+                             NumericMatrix sqrtTestMat,
+                             NumericMatrix invSqrtTestMat,
+                             NumericMatrix sampPrecision,
+                             double stepSize,
+                             int burnin, int mhiters, int rbIters) {
   // Initializing
-  var -= 1;
   int p  = sqrtTestMat.nrow() ;
   double u = initU ;
   int tempBurnin = burnin ;
   NumericVector mu = NumericVector(p, 0.0) ;
-  mu[var] = u ;
+  mu = addVec + multVec * u ;
   NumericVector sampMu = clone(mu) ;
   NumericVector samp = clone(mu) ;
   NumericMatrix rawsamp = NumericMatrix(1, p) ;
@@ -165,11 +174,12 @@ double quadraticRobinsMonroe(int var, bool upper, double alpha,
     innerProduct(samp, invSqrtTestMat, rawsamp(0, _)) ;
 
     // Taking step
+    // printVec(mu) ; 
+    //Rcpp::Rcout<<observed<<" "<<sum(samp * eta)<<"\n" ;
     if(upper) {
       c = k * (u - observed) / (i + 30) ;
       // c = k /  (i + 30) ;
-      if(samp[var] > observed) {
-        // Rcpp::Rcout<<k<<" "<<samp[var]<<" " ;
+      if(sum(samp * eta) > observed) {
         u -= c * alpha ;
       } else {
         u += c * (1 - alpha) ;
@@ -177,7 +187,7 @@ double quadraticRobinsMonroe(int var, bool upper, double alpha,
     } else {
       c = k * (observed - u) / (i + 30) ;
       // c = k / (i + 30) ;
-      if(samp[var] < observed) {
+      if(sum(samp * eta) < observed) {
         u += c * alpha ;
       } else {
         u -= c * (1 - alpha) ;
@@ -185,22 +195,25 @@ double quadraticRobinsMonroe(int var, bool upper, double alpha,
     }
 
     // Rcpp::Rcout<<samp[var]<<"\n" ;
-    mu[var] = u ;
+    mu = addVec + multVec * u ;
+    //printVec(mu) ; 
   }
-
+  
   return u ;
 }
 
 // [[Rcpp::export]]
 double linearRobinsMonroe(bool upper, double alpha,
-                          double observed, double initU,
-                          double contrastCoordinate,
+                          double observed, 
+                          double addVec, double multVec,
+                          double initU,
                           NumericVector threshold,
                           double contsd,
                           double condSD,
                           double regConst,
                           double stepSize,
                           int rbIters) {
+  
   // Initializing
   double u = initU ;
   double k = stepSize ;
@@ -211,7 +224,7 @@ double linearRobinsMonroe(bool upper, double alpha,
 
   for(int i = 1 ; i < rbIters + 1 ; i++) {
     // Sampling contrast
-    m = contrastCoordinate * u;
+    m = addVec + multVec * u ;
     negProb = R::pnorm5(threshold[1], m, contsd, 1, 1) ;
     posProb = R::pnorm5(threshold[2], m, contsd, 0, 1) ;
     negProb = 1 / (1 + std::exp(posProb - negProb)) ;
@@ -228,14 +241,14 @@ double linearRobinsMonroe(bool upper, double alpha,
 
     // Taking step
     if(upper) {
-      c = k * (u - observed) / (i + 30) ;
+      c = k * double(u - observed) / double(i + 30) ;
       if(samp > observed) {
         u -= c * alpha ;
       } else {
         u += c * (1 - alpha) ;
       }
     } else {
-      c = k * (observed - u) / (i + 30) ;
+      c = k * double(observed - u) / double(i + 30) ;
       if(samp < observed) {
         u += c * alpha ;
       } else {

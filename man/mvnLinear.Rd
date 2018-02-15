@@ -4,8 +4,8 @@
 \alias{mvnLinear}
 \title{Inference for Normal Means after Aggregate Testing with a Linear Test}
 \usage{
-mvnLinear(y, sigma, contrast, threshold, pval_threshold = 0.05,
-  test_direction = c("two-sided", "lower", "upper"),
+mvnLinear(y, sigma, testVec, threshold = NULL, pval_threshold = 0.05,
+  contrasts = NULL, test_direction = c("two-sided", "lower", "upper"),
   estimate_type = c("mle", "naive"), pvalue_type = c("hybrid", "polyhedral",
   "naive"), ci_type = c("switch", "polyhedral", "naive"),
   confidence_level = 0.95, verbose = TRUE, control = psatControl())
@@ -15,7 +15,7 @@ mvnLinear(y, sigma, contrast, threshold, pval_threshold = 0.05,
 
 \item{sigma}{the covariance matrix of \code{y}.}
 
-\item{contrast}{the test contrast \eqn{a} of size \code{length(y)} used in the aggregate test}
+\item{testVec}{the test testVec \eqn{a} of size \code{length(y)} used in the aggregate test}
 
 \item{threshold}{the threshold used in the aggregate test, either a vector of size two for the lower and upper
 thresholds \eqn{u, l}, or a single number.}

@@ -16,7 +16,8 @@ LinkingTo: Rcpp, RcppArmadillo
 Imports: Rcpp,
         CompQuadForm,
         ggplot2,
-        reshape2
+        reshape2,
+        magrittr
 Suggests: clusterGeneration,
         expm,
         gridExtra

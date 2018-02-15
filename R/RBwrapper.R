@@ -4,7 +4,7 @@ quadraticRB <- function(y, sigma, testmat, threshold,
                         computeFull = FALSE) {
   p <- length(y)
   if(is.null(variables)) {
-    variables <- 1:p
+    variables <- diag(length(y))
   }
 
   # Computing matrices ---------------
@@ -22,27 +22,34 @@ quadraticRB <- function(y, sigma, testmat, threshold,
     rbIters <- (50 * (1 - alpha) / alpha)
   }
 
-  ci <- matrix(nrow = p, ncol = 2)
-  for(j in variables) {
+  ci <- matrix(nrow = nrow(variables), ncol = 2)
+  for(j in 1:nrow(variables)) {
+    contrast <- variables[j, ]
+    contsd <- sqrt(as.numeric(t(contrast) %*% sigma %*% contrast))
+    observed <- sum(contrast * y)
+    
     for(upper in c(TRUE, FALSE)) {
       if(!computeFull) {
-        if(upper & y[j] > 0) {
+        if(upper & observed > 0) {
           next
-        } else if(!upper & y[j] < 0) {
+        } else if(!upper & observed < 0) {
           next
         }
       }
 
       if(upper) {
-        init <- y[j] + qnorm(1 - alpha / 4) * sqrt(diag(sigma)[j])
+        init <- observed + qnorm(1 - alpha / 4) * contsd
         a <- alpha / 2
       } else {
-        init <- y[j] - qnorm(1 - alpha / 4) * sqrt(diag(sigma)[j])
+        init <- observed - qnorm(1 - alpha / 4) * contsd
         a <- alpha / 2
       }
 
-      u <- quadraticRobinsMonroe(var = j, upper = upper, alpha = a,
-                                 observed = y[j], initU = init,
+      adjVecs <- computeAdjVecs(y, contrast, sigma)
+      u <- quadraticRobinsMonroe(eta = contrast, 
+                                 addVec = adjVecs$addVec, multVec = adjVecs$multVec,
+                                 upper = upper, alpha = a,
+                                 observed = observed, initU = init,
                                  threshold = threshold,
                                  sqrtTestMat = sqrtTestMat,
                                  invSqrtTestMat = invSqrtTestMat,
@@ -51,7 +58,6 @@ quadraticRB <- function(y, sigma, testmat, threshold,
                                  burnin = 1000, mhiters = 5, rbIters = rbIters)
       ci[j, upper + 1] <- u
     }
-    # print(ci[j, ])
   }
 
   ci[is.na(ci[, 1]), 1] <- -Inf
@@ -60,14 +66,14 @@ quadraticRB <- function(y, sigma, testmat, threshold,
   return(ci)
 }
 
-
-linearRB <- function(y, sigma, contrast, threshold,
-                        alpha, rbIters = NULL,
-                        variables = NULL,
-                        computeFull = FALSE) {
+#' @import magrittr
+linearRB <- function(y, sigma, testVec, threshold,
+                     alpha, rbIters = NULL,
+                     variables = NULL,
+                     computeFull = FALSE) {
   p <- length(y)
   if(is.null(variables)) {
-    variables <- 1:p
+    variables <- diag(p)
   }
 
   # Computing matrices ---------------
@@ -75,32 +81,42 @@ linearRB <- function(y, sigma, contrast, threshold,
     rbIters <- 500  * (1 - alpha) / alpha
   }
 
-  contsd <- as.numeric(sqrt(t(contrast) %*% sigma %*% contrast))
-  ci <- matrix(nrow = p, ncol = 2)
-  for(j in variables) {
+  testsd <- as.numeric(sqrt(t(testVec) %*% sigma %*% testVec))
+  ci <- matrix(nrow = nrow(variables), ncol = 2)
+  for(j in 1:nrow(variables)) {
+    contrast <- variables[j, ]
+    observed <- sum(contrast * y)
+    contsd <- as.numeric(sqrt(t(contrast) %*% sigma %*% contrast))
+    
     for(upper in c(TRUE, FALSE)) {
       if(!computeFull) {
-        if(upper & y[j] > 0) {
+        if(upper & observed > 0) {
           next
-        } else if(!upper & y[j] < 0) {
+        } else if(!upper & observed < 0) {
           next
         }
       }
 
       if(upper) {
-        init <- y[j] + qnorm(1 - alpha / 4) * sqrt(diag(sigma)[j])
+        init <- observed + qnorm(1 - alpha / 4) * contsd
         a <- alpha / 2
       } else {
-        init <- y[j] - qnorm(1 - alpha / 4) * sqrt(diag(sigma)[j])
+        init <- observed - qnorm(1 - alpha / 4) * contsd
         a <- alpha / 2
       }
 
-      condSD <- as.numeric(sqrt(sigma[j, j] - sum(sigma[j, ] * contrast)^2 / contsd^2))
-      regConst <- sum(sigma[j, ] * contrast) / contsd^2
-      u <- linearRobinsMonroe(upper, alpha, y[j], init,
-                              contrast[j], threshold,
-                              contsd, condSD, regConst,
-                              stepSize = 17 * sqrt(diag(sigma)[j]),
+      condSD <- contsd^2 - (t(contrast) %*% sigma %*% testVec)^2 / testsd^2 
+      condSD <- as.numeric(sqrt(condSD))
+      regConst <- as.numeric(t(testVec) %*% sigma %*% contrast) / testsd^2
+      adjVecs <- computeAdjVecs(y, contrast, sigma) %>% sapply(function(x) sum(testVec * x))
+      u <- linearRobinsMonroe(upper = upper, alpha = alpha, 
+                              observed = observed, 
+                              addVec = adjVecs[1], multVec = adjVecs[2],
+                              initU = init,
+                              threshold = threshold,
+                              contsd = testsd, condSD = condSD, 
+                              regConst = regConst,
+                              stepSize = 17 * contsd,
                               rbIters = rbIters)
       ci[j, upper + 1] <- u
     }
@@ -112,4 +128,17 @@ linearRB <- function(y, sigma, contrast, threshold,
   return(ci)
 }
 
+
+computeAdjVecs <- function(y, eta, sigma) {
+  p <- length(y)
+  proj <- diag(p) - eta %*% solve(t(eta) %*% eta) %*% t(eta)
+  basis <- matrix(rnorm((p - 1) * p), nrow = p - 1)
+  basis <- basis %*% proj
+  basis <- rbind(eta, basis)
+  
+  regMat <- sigma %*% t(basis) %*% solve(basis %*% sigma %*% t(basis))
+  addVec <- y - regMat %*% basis %*% y
+  multVec <- regMat[, 1]
+  return(list(addVec = addVec, multVec = multVec))
+}
 

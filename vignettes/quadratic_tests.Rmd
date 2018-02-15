@@ -56,12 +56,19 @@ Our threshold is `r round(threshold, 1)` and the realized test statistic is `r r
 
 ```{r allfit, cache=TRUE}
 library(PSAT)
+diffCont <- matrix(0, nrow = 2, ncol = p)
+diffCont[1, 1] <- 1
+diffCont[1, 2] <- -1
+diffCont[2, 7] <- 1
+diffCont[2, 8] <- -1
+contrasts <- rbind(diag(length(y)), diffCont)
 control <- psatControl(trueHybrid = TRUE, 
                        rbIters = 5000, 
                        nSamples = 10^4, 
                        truncPmethod = "UMPU")
 allfit <- mvnQuadratic(y, sigma, testMat = "wald", 
                        threshold = NULL, pval_threshold = pthreshold,
+                       contrasts = contrasts,
                        estimate_type = c("mle", "naive"),
                        pvalue_type = c("hybrid", "polyhedral", "naive"),
                        ci_type = c("switch", "polyhedral", "naive"),
@@ -73,7 +80,8 @@ allfit <- mvnQuadratic(y, sigma, testMat = "wald",
 Notice that when calling `mvnQuadratic`, we listed several methods for confidence interval and p-value computations. The function will compute all of the requested quantities. A good way to examine the outputs of the function is to plot the estimates and confidence intervals, in the following function call we will provide the plotting function with the ground truth so we can see whether our confidence intervals have successfully identified the true signal. 
 
 ```{r estimate plot, cache=TRUE}
-plot(allfit, type = "estimates", true = mu)
+trueMean <- as.numeric(contrasts %*% mu)
+plot(allfit, type = "estimates", true = trueMean)
 ```
 
 In the figure, notice that the naive confidence intervals miss one of the true signals. Also, notice that while the polyhedral confidence intervals tend to be narrower than the global-null or regime switching confidence intervals, they fail to detect that the first coordinate of the mean vector is different from zero. These are all typical behaviors of for these inference methods. Also, notice that the selection adjusted MLE has applied some shrinkage to the observed coordinates of the mean vector. 
@@ -142,6 +150,7 @@ plot(y, coef(sgdfit), col = "red")
 points(y, coef(allfit), col = "black", pch = 2)
 points(y, coef(nmfit), col = "blue", pch = 3)
 abline(a = 0, b = 1)
+abline(v = 0, h = 0, lty = 2)
 legend("topleft", col = c("black", "red", "blue"), pch = 1:3, 
        legend = c("exact MLE", "SGD MLE", "Nelder-Mead"))
 ```

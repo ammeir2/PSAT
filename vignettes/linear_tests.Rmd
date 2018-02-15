@@ -34,7 +34,6 @@ snr <- 3
 mu <- rexp(sparsity) 
 mu <- mu / sum(abs(mu)) * snr
 mu <- c(mu, rep(0, p - sparsity))
-# sigma <- cov2cor(clusterGeneration::genPositiveDefMat(p)$Sigma)
 sigma <- matrix(0.3, nrow = p, ncol = p)
 diag(sigma) <- 1
 sqrtSig <- expm::sqrtm(sigma)
@@ -58,18 +57,27 @@ Our threshold is `r round(threshold, 1)` and the realized test statistic is `r r
 
 ```{r allfit, cache=TRUE}
 library(PSAT)
-allfit <- mvnLinear(y, sigma, contrast = a, pval_threshold = pthreshold, test_direction = "two-sided",
-                      estimate_type = c("mle", "naive"),
-                      pvalue_type = c("hybrid", "polyhedral", "naive"),
-                      ci_type = c("switch", "polyhedral", "naive"),
-                      confidence_level = .95, verbose = TRUE,
-                      control = psatControl(nSamples = 10^4))
+diffCont <- matrix(0, nrow = 2, ncol = p)
+diffCont[1, 1] <- 1
+diffCont[1, 2] <- -1
+diffCont[2, 7] <- 1
+diffCont[2, 8] <- -1
+contrasts <- rbind(diag(length(y)), diffCont)
+allfit <- mvnLinear(y, sigma, testVec = a, pval_threshold = pthreshold, 
+                    contrasts = contrasts,
+                    # test_direction = "two-sided",
+                    estimate_type = c("mle", "naive"),
+                    pvalue_type = c("hybrid", "polyhedral", "naive"),
+                    ci_type = c("switch", "polyhedral", "naive"),
+                    confidence_level = .95, verbose = TRUE,
+                    control = psatControl(nSamples = 10^4))
 ```
 
 Notice that when calling `mvnQuadratic`, we listed several methods for confidence interval and p-value computations. The function will compute all of the requested quantities. A good way to examine the outputs of the function is to plot the estimates and confidence intervals, in the following function call we will provide the plotting function with the ground truth so we can see whether our confidence intervals have successfully identified the true signal. 
 
 ```{r estimate plot, cache=TRUE}
-plot(allfit, type = "estimates", true = mu)
+trueMean <- as.numeric(contrasts %*% mu)
+plot(allfit, type = "estimates", true = trueMean)
 ```
 
 In the figure, notice that the naive confidence intervals miss one of the true signals. Also, notice that while the polyhedral confidence intervals tend to be narrower than the global-null or regime switching confidence intervals, they fail to detect that the first coordinate of the mean vector is different from zero. These are all typical behaviors of for these inference methods. Also, notice that the selection adjusted MLE has applied some shrinkage to the observed coordinates of the mean vector. 

@@ -71,6 +71,7 @@
 #' \code{\link{coef.mvnQuadratic}}, \code{\link{plot.mvnQuadratic}},
 #' \code{\link{psatGLM}}.
 mvnQuadratic <- function(y, sigma, testMat = "wald",
+                         contrasts = NULL,
                          threshold = NULL, pval_threshold = 0.05,
                          estimate_type = c("mle", "naive"),
                          pvalue_type = c("hybrid", "polyhedral", "naive"),
@@ -143,6 +144,16 @@ mvnQuadratic <- function(y, sigma, testMat = "wald",
 
   if(is.null(switchTune)) {
     switchTune <- confidence_level^2
+  }
+  
+  # Contrasts ------
+  if(is.null(contrasts)) {
+    contrasts <- diag(length(y))
+  }
+  
+  if(ncol(contrasts) != length(y) | 
+     nrow(contrasts) < 1) {
+    stop("Contrasts must be a matrix with length(y) columns! (and at least one row)")
   }
 
   # Setting threshold ----------------------------
@@ -225,10 +236,13 @@ mvnQuadratic <- function(y, sigma, testMat = "wald",
                                             sampSize = nSamples,
                                             burnin = 1000,
                                             trim = 50)
-    nullPval <- numeric(length(y))
-    for(i in 1:length(nullPval)) {
-      nullPval[i] <- 2 * min(mean(y[i] < nullSample[, i]), mean(y[i] > nullSample[, i]))
+    nullPval <- numeric(nrow(contrasts))
+    for(i in 1:nrow(contrasts)) {
+      cont <- sum(contrasts[i, ] * y)
+      contsamp <- as.numeric(nullSample %*% contrasts[i, ])
+      nullPval[i] <- 2 * min(mean(cont < contsamp), mean(cont > contsamp))
     }
+    
     if(pvalue_type[1] == "global-null") {
       pvalue <- nullPval
     }
@@ -242,6 +256,7 @@ mvnQuadratic <- function(y, sigma, testMat = "wald",
   if(any(c("polyhedral", "hybrid") %in% pvalue_type) | "polyhedral" %in% ci_type) {
     if(verbose) print("Computing polyhedral p-values/CIs!")
     polyResult <- getPolyCI(y, sigma, testMat, threshold, confidence_level,
+                            contrasts = contrasts,
                             truncPmethod = truncPmethod)
     polyPval <- polyResult$pval
     polyCI <- polyResult$ci
@@ -263,63 +278,11 @@ mvnQuadratic <- function(y, sigma, testMat = "wald",
     pvalue <- hybridPval
   }
 
-  # MLE based inference -----------
-  if("mle" %in% c(pvalue_type, ci_type)) {
-    if(verbose) print(paste("Sampling from the truncated distribution under the MLE! (", nSamples, " samples)", sep =""))
-    mleSample <- sampleQuadraticConstraint(muhat, sigma,
-                                           threshold, testMat,
-                                           sampSize = nSamples,
-                                           burnin = 1000,
-                                           trim = 50)
-    if(p < 20 & quadtest == "wald") {
-      mleLam <- apply(mleSample, 1, function(x) optimize(conditionalDnorm, interval = c(0, 1),
-                                                         maximum = TRUE, y = x, precision = invcov,
-                                                         ncp = ncp, threshold = threshold)$maximum)
-    } else {
-      mleLam <- rep(1, nrow(mleSample))
-    }
-
-    mleDist <- mleSample
-    mleDist <- apply(mleDist, 2, function(x) x - mean(x))
-    mleDist <- mleDist %*% solve(var(mleDist))
-    # for(i in 1:nrow(mleDist)) {
-    #   # mleDist[i, ] <- mleDist[i, ] * mleLam[i] - muhat
-    #   mleDist[i, ] <- mleDist[i, ] - muhat
-    # }
-
-    mlePval <- numeric(p)
-    for(i in 1:length(mlePval)) {
-      if(muhat[i] > 0) {
-        if(muhat[i] - max(mleDist[, i]) > 0) {
-          mlePval[i] <- 1 / nrow(mleDist)
-        } else {
-          mlePval[i] <- 1 - uniroot(function(x) muhat[i] - quantile(mleDist[, i], x),
-                                    interval = c(0, 1))$root
-        }
-      } else {
-        if(muhat[i] - min(mleDist[, i]) < 0) {
-          mlePval[i] <- 1 / nrow(mleDist)
-        } else {
-          mlePval[i] <- uniroot(function(x) muhat[i] - quantile(mleDist[, i], x),
-                                interval = c(0, 1))$root
-        }
-      }
-    }
-    mlePval <- 2 * mlePval
-    mleCI <- getMleCI(muhat, mleDist, confidence_level)
-  } else {
-    mleSample <- NULL
-    mlePval <- NULL
-    mleCI <- NULL
-    mleDist <- NULL
-  }
-
-  if(ci_type[1] == "mle") {
-    ci <- mleCI
-  }
-  if(pvalue_type[1] == "mle") {
-    pvalue <- mlePval
-  }
+  # MLE based inference (removed) -----------
+  mleSample <- NULL
+  mlePval <- NULL
+  mleCI <- NULL
+  mleDist <- NULL
 
   # Null Distribution Based CIs ---------------
   if(("global-null" %in% ci_type)) {
@@ -343,6 +306,7 @@ mvnQuadratic <- function(y, sigma, testMat = "wald",
       nullCI <- getNullCI(muhat, nullDist, confidence_level)
     } else {
       nullCI <- quadraticRB(y, sigma, testMat, threshold,
+                            variables = contrasts,
                             confidence_level, computeFull = TRUE,
                             rbIters = rbIters)
       nullDist <- NULL
@@ -357,20 +321,22 @@ mvnQuadratic <- function(y, sigma, testMat = "wald",
   }
 
   # Naive pvalues and CIs -----------------------
-  naiveCI <- getNaiveCI(y, sigma, confidence_level)
-  naivePval <- 2 * pnorm(-abs(as.numeric(y / sqrt(diag(sigma)))))
+  naiveCI <- getNaiveCI(y, sigma, confidence_level, contrasts, TRUE)
+  naivePval <- naiveCI$pval
+  naiveCI <- naiveCI$ci
   if(ci_type[1] == "naive") {
     ci <- naiveCI
   }
   if(pvalue_type[1] == "naive") {
     pvalue <- naivePval
   }
-
+  
   # Regime switching CIs -------------------------
   if("switch" %in% ci_type) {
     if(verbose) print("Computing Switching Regime CIs!")
     switchCI <- getSwitchCI(y, sigma, testMat, threshold, pthreshold,
-                            confidence_level, quadlam,
+                            confidence_level, contrasts = contrasts,
+                            quadlam,
                             t2 = pthreshold * switchTune, testStat,
                             hybridPval, trueHybrid, rbIters)
   } else {
@@ -399,9 +365,12 @@ mvnQuadratic <- function(y, sigma, testMat = "wald",
   results$muhat <- muhat
   results$ci <- ci
   results$pvalue <- pvalue
+  results$contrasts <- contrasts
 
-  results$naiveMu <- y
+  results$y <- y
+  results$naiveContrast <- as.numeric(contrasts %*% y)
   results$mleMu <- mleMu
+  results$mleContrast <- as.numeric(contrasts %*% mleMu)
   results$solutionPath <- solutionPath
   results$nullSample <- nullSample
   results$nullDist <- nullDist

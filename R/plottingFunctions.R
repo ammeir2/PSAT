@@ -85,10 +85,11 @@ plot.mvnLinear <- function(x, type = c("estimates", "solution-path", "p-values")
 #'
 #' @describeIn plotEstimates plots estimates and confidence intervals.
 plotEstimates <- function(object, true = NULL, offset = 0.12) {
+  contrasts <- object$contrasts
   offsetMulti <- offset
-  naive <- object$naiveMu
-  p <- length(naive)
-  mle <- object$mleMu
+  naive <- as.numeric(contrasts %*% y)
+  p <- nrow(contrasts)
+  mle <- object$mleContrast
   cis <- object$ci_type
   offset <- 0
   naive <- data.frame(variable = 1:p, estimate = naive,
@@ -123,7 +124,7 @@ plotEstimates <- function(object, true = NULL, offset = 0.12) {
   plotdat <- rbind(naive, mle, do.call("rbind", plotlist))
 
   if(!is.null(true)) {
-    if(length(true) != length(object$naiveMu)) {
+    if(length(true) != nrow(object$contrasts)) {
       stop("Incorrect dimension for underlying true mean!")
     }
 
@@ -170,17 +171,18 @@ plotSolutionPath <- function(object) {
 
 #' @describeIn plotEstimates plots the selection adjusted p-values.
 plotPvalues <- function(object, threshold = 0.1, adjust = "bonferroni") {
+  contrasts <- object$contrasts
   if(is.null(adjust)) {
     adjust <- "none"
   }
   adjust <- adjust[1]
   if(!(adjust %in% c("holm", "hochberg", "hommel", "bonferroni", "BH", "BY", "fdr", "none"))) {
-    stop("Unknown p-value adjustment method. See documentation for `p.adjust` for details.")
+    stop("Unknown p-value adjustment method. See documentation of `p.adjust` for details.")
   }
 
-  varnames <- colnames(object$sigma)
-  if(is.null(varnames)) {
-    varnames <- 1:ncol(object$sigma)
+  varnames <- rownames(object$contrasts)
+  if(!(length(unique(varnames)) == nrow(contrasts))) {
+    varnames <- 1:nrow(object$contrasts)
   }
   naive <- data.frame(variable = varnames, p_value = object$naivePval,
                       pvalue_type = "naive", stringsAsFactors = FALSE)

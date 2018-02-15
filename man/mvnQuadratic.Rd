@@ -4,11 +4,11 @@
 \alias{mvnQuadratic}
 \title{Inference for Normal Means after Aggregate Testing}
 \usage{
-mvnQuadratic(y, sigma, testMat = "wald", threshold = NULL,
-  pval_threshold = 0.05, estimate_type = c("mle", "naive"),
-  pvalue_type = c("hybrid", "polyhedral", "naive"), ci_type = c("switch",
-  "polyhedral", "naive"), confidence_level = 0.95, verbose = TRUE,
-  control = psatControl())
+mvnQuadratic(y, sigma, testMat = "wald", contrasts = NULL,
+  threshold = NULL, pval_threshold = 0.05, estimate_type = c("mle",
+  "naive"), pvalue_type = c("hybrid", "polyhedral", "naive"),
+  ci_type = c("switch", "polyhedral", "naive"), confidence_level = 0.95,
+  verbose = TRUE, control = psatControl())
 }
 \arguments{
 \item{y}{the observed normal vector.}

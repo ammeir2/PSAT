@@ -24,12 +24,14 @@ BEGIN_RCPP
 END_RCPP
 }
 // quadraticRobinsMonroe
-double quadraticRobinsMonroe(int var, bool upper, double alpha, double observed, double initU, double threshold, NumericMatrix sqrtTestMat, NumericMatrix invSqrtTestMat, NumericMatrix sampPrecision, double stepSize, int burnin, int mhiters, int rbIters);
-RcppExport SEXP _PSAT_quadraticRobinsMonroe(SEXP varSEXP, SEXP upperSEXP, SEXP alphaSEXP, SEXP observedSEXP, SEXP initUSEXP, SEXP thresholdSEXP, SEXP sqrtTestMatSEXP, SEXP invSqrtTestMatSEXP, SEXP sampPrecisionSEXP, SEXP stepSizeSEXP, SEXP burninSEXP, SEXP mhitersSEXP, SEXP rbItersSEXP) {
+double quadraticRobinsMonroe(NumericVector eta, NumericVector addVec, NumericVector multVec, bool upper, double alpha, double observed, double initU, double threshold, NumericMatrix sqrtTestMat, NumericMatrix invSqrtTestMat, NumericMatrix sampPrecision, double stepSize, int burnin, int mhiters, int rbIters);
+RcppExport SEXP _PSAT_quadraticRobinsMonroe(SEXP etaSEXP, SEXP addVecSEXP, SEXP multVecSEXP, SEXP upperSEXP, SEXP alphaSEXP, SEXP observedSEXP, SEXP initUSEXP, SEXP thresholdSEXP, SEXP sqrtTestMatSEXP, SEXP invSqrtTestMatSEXP, SEXP sampPrecisionSEXP, SEXP stepSizeSEXP, SEXP burninSEXP, SEXP mhitersSEXP, SEXP rbItersSEXP) {
 BEGIN_RCPP
     Rcpp::RObject rcpp_result_gen;
     Rcpp::RNGScope rcpp_rngScope_gen;
-    Rcpp::traits::input_parameter< int >::type var(varSEXP);
+    Rcpp::traits::input_parameter< NumericVector >::type eta(etaSEXP);
+    Rcpp::traits::input_parameter< NumericVector >::type addVec(addVecSEXP);
+    Rcpp::traits::input_parameter< NumericVector >::type multVec(multVecSEXP);
     Rcpp::traits::input_parameter< bool >::type upper(upperSEXP);
     Rcpp::traits::input_parameter< double >::type alpha(alphaSEXP);
     Rcpp::traits::input_parameter< double >::type observed(observedSEXP);
@@ -42,36 +44,37 @@ BEGIN_RCPP
     Rcpp::traits::input_parameter< int >::type burnin(burninSEXP);
     Rcpp::traits::input_parameter< int >::type mhiters(mhitersSEXP);
     Rcpp::traits::input_parameter< int >::type rbIters(rbItersSEXP);
-    rcpp_result_gen = Rcpp::wrap(quadraticRobinsMonroe(var, upper, alpha, observed, initU, threshold, sqrtTestMat, invSqrtTestMat, sampPrecision, stepSize, burnin, mhiters, rbIters));
+    rcpp_result_gen = Rcpp::wrap(quadraticRobinsMonroe(eta, addVec, multVec, upper, alpha, observed, initU, threshold, sqrtTestMat, invSqrtTestMat, sampPrecision, stepSize, burnin, mhiters, rbIters));
     return rcpp_result_gen;
 END_RCPP
 }
 // linearRobinsMonroe
-double linearRobinsMonroe(bool upper, double alpha, double observed, double initU, double contrastCoordinate, NumericVector threshold, double contsd, double condSD, double regConst, double stepSize, int rbIters);
-RcppExport SEXP _PSAT_linearRobinsMonroe(SEXP upperSEXP, SEXP alphaSEXP, SEXP observedSEXP, SEXP initUSEXP, SEXP contrastCoordinateSEXP, SEXP thresholdSEXP, SEXP contsdSEXP, SEXP condSDSEXP, SEXP regConstSEXP, SEXP stepSizeSEXP, SEXP rbItersSEXP) {
+double linearRobinsMonroe(bool upper, double alpha, double observed, double addVec, double multVec, double initU, NumericVector threshold, double contsd, double condSD, double regConst, double stepSize, int rbIters);
+RcppExport SEXP _PSAT_linearRobinsMonroe(SEXP upperSEXP, SEXP alphaSEXP, SEXP observedSEXP, SEXP addVecSEXP, SEXP multVecSEXP, SEXP initUSEXP, SEXP thresholdSEXP, SEXP contsdSEXP, SEXP condSDSEXP, SEXP regConstSEXP, SEXP stepSizeSEXP, SEXP rbItersSEXP) {
 BEGIN_RCPP
     Rcpp::RObject rcpp_result_gen;
     Rcpp::RNGScope rcpp_rngScope_gen;
     Rcpp::traits::input_parameter< bool >::type upper(upperSEXP);
     Rcpp::traits::input_parameter< double >::type alpha(alphaSEXP);
     Rcpp::traits::input_parameter< double >::type observed(observedSEXP);
+    Rcpp::traits::input_parameter< double >::type addVec(addVecSEXP);
+    Rcpp::traits::input_parameter< double >::type multVec(multVecSEXP);
     Rcpp::traits::input_parameter< double >::type initU(initUSEXP);
-    Rcpp::traits::input_parameter< double >::type contrastCoordinate(contrastCoordinateSEXP);
     Rcpp::traits::input_parameter< NumericVector >::type threshold(thresholdSEXP);
     Rcpp::traits::input_parameter< double >::type contsd(contsdSEXP);
     Rcpp::traits::input_parameter< double >::type condSD(condSDSEXP);
     Rcpp::traits::input_parameter< double >::type regConst(regConstSEXP);
     Rcpp::traits::input_parameter< double >::type stepSize(stepSizeSEXP);
     Rcpp::traits::input_parameter< int >::type rbIters(rbItersSEXP);
-    rcpp_result_gen = Rcpp::wrap(linearRobinsMonroe(upper, alpha, observed, initU, contrastCoordinate, threshold, contsd, condSD, regConst, stepSize, rbIters));
+    rcpp_result_gen = Rcpp::wrap(linearRobinsMonroe(upper, alpha, observed, addVec, multVec, initU, threshold, contsd, condSD, regConst, stepSize, rbIters));
     return rcpp_result_gen;
 END_RCPP
 }
 
 static const R_CallMethodDef CallEntries[] = {
     {"_PSAT_sampleQuadraticMVTcpp", (DL_FUNC) &_PSAT_sampleQuadraticMVTcpp, 7},
-    {"_PSAT_quadraticRobinsMonroe", (DL_FUNC) &_PSAT_quadraticRobinsMonroe, 13},
-    {"_PSAT_linearRobinsMonroe", (DL_FUNC) &_PSAT_linearRobinsMonroe, 11},
+    {"_PSAT_quadraticRobinsMonroe", (DL_FUNC) &_PSAT_quadraticRobinsMonroe, 15},
+    {"_PSAT_linearRobinsMonroe", (DL_FUNC) &_PSAT_linearRobinsMonroe, 12},
     {NULL, NULL, 0}
 };
 

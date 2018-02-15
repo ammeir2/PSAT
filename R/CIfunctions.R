@@ -1,7 +1,14 @@
 getPolyCI <- function(y, sigma, testMat, threshold, confidence_level,
                       computeCI = TRUE, test = "quadratic",
-                      truncPmethod = "symmetric") {
-  etaMat <- diag(length(y))
+                      truncPmethod = "symmetric", contrasts = NULL) {
+  # What are we testing? 
+  if(is.null(contrasts)) {
+    etaMat <- diag(length(y))
+  } else {
+    etaMat <- t(contrasts)
+  }
+  
+  # Computing CIs
   if(test == "quadratic") { # Quadratic
     polyhedral <- apply(etaMat, 2, polyhedral.workhorse,
                         u = y, sigma = sigma, testMat = testMat,
@@ -13,22 +20,36 @@ getPolyCI <- function(y, sigma, testMat, threshold, confidence_level,
                         u = y, sigma = sigma, a = testMat,
                         threshold = threshold, computeCI = computeCI,
                         alpha = confidence_level, truncPmethod = truncPmethod)
-    noCorrection <- rep(FALSE, length(y))
+    noCorrection <- rep(FALSE, ncol(etaMat))
   }
   polyPval <- sapply(polyhedral, function(x) x$pval)
   polyCI <- do.call("rbind", lapply(polyhedral, function(x) x$ci))
   return(list(pval = polyPval, ci = polyCI, noCorrection = noCorrection))
 }
 
-getNaiveCI <- function(y, sigma, confidence_level) {
-  p <- length(y)
-  sds <- sqrt(diag(sigma))
-  quant <- qnorm(1 - confidence_level / 2)
-  naiveCI <- matrix(nrow = p, ncol = 2)
-  for(i in 1:p) {
-    naiveCI[i, ] <- y[i] + c(-1, 1) * sds[i] * quant
+getNaiveCI <- function(y, sigma, confidence_level, contrasts = NULL,
+                       computePval = FALSE) {
+  if(is.null(contrasts)) {
+    contrasts <- diag(length(y))
   }
-  return(naiveCI)
+  
+  naiveCI <- matrix(nrow = nrow(contrasts), ncol = 2)
+  pvalues <- numeric(nrow(contrasts))
+  quant <- qnorm(1 - confidence_level / 2)
+  for(i in 1:nrow(contrasts)) {
+    cont <- contrasts[i, ]
+    contsd <- as.numeric(sqrt(t(cont) %*% sigma %*% cont))
+    observed <- sum(cont * y)
+    naiveCI[i, ] <- observed + c(-1, 1) * contsd * quant
+    pvalues[i] <- 2 * pnorm(-abs(observed / contsd))
+  }
+  
+  if(computePval) {
+    result <- list(ci = naiveCI, pval = pvalues)
+  } else {
+    result <- naiveCI
+  }
+  return(result)
 }
 
 getNullCI <- function(muhat, nullDist, confidence_level) {
@@ -62,9 +83,11 @@ getMleCI <- function(muhat, mleDist, confidence_level) {
 }
 
 getHybridCI <- function(y, sigma, testMat, threshold, pthreshold, confidence_level,
+                        contrasts = NULL,
                         hybridPval = NULL, trueHybrid = FALSE, rbIters = NULL,
                         test = "quadratic") {
   ci <- getSwitchCI(y, sigma, testMat, threshold, pthreshold, confidence_level,
+                    contrasts, 
                     quadlam = rep(1, length(y)),
                     t2 = 10^-10,
                     testStat = 0, rbIters = rbIters, test)
@@ -72,12 +95,16 @@ getHybridCI <- function(y, sigma, testMat, threshold, pthreshold, confidence_lev
 }
 
 getSwitchCI <- function(y, sigma, testMat, threshold, pthreshold,
-                        confidence_level,
+                        confidence_level, contrasts = NULL,
                         quadlam, t2, testStat, hybridPval = NULL,
                         trueHybrid = FALSE, rbIters = NULL,
                         test = "quadratic") {
+  if(is.null(contrasts)) {
+    contrasts <- diag(length(y))
+  }
+  
   if(test == "linear") {
-    contrast <- testMat
+    testVec <- testMat
   }
 
   p <- length(y)
@@ -94,14 +121,14 @@ getSwitchCI <- function(y, sigma, testMat, threshold, pthreshold,
       return(ci)
     }
   } else if(test == "linear") {
-    contsd <- as.numeric(sqrt(t(contrast) %*% sigma %*% contrast))
+    contsd <- as.numeric(sqrt(t(testVec) %*% sigma %*% testVec))
     secondThreshold <- numeric(2)
     secondThreshold[1] <- qnorm(pnorm(threshold[1], sd = contsd) * t2, sd = contsd)
     secondThreshold[2] <- qnorm(pnorm(threshold[2], sd = contsd, lower.tail = FALSE) * t2,
                                 sd = contsd, lower.tail = FALSE)
-    testStat <- sum(y * contrast)
+    testStat <- sum(y * testVec)
     if(testStat < secondThreshold[1] | testStat > secondThreshold[2]) {
-      ci <- t(sapply(1:length(y), function(j) y[j] + c(-1, 1) * qnorm(1 - confidence_level / 2) * sqrt(sigma[j, j])))
+      ci <- getNaiveCI(y, sigma, confidence_level, contrasts, FALSE)$ci
       return(ci)
     }
   }
@@ -113,16 +140,17 @@ getSwitchCI <- function(y, sigma, testMat, threshold, pthreshold,
     a <- (confidence_level - t2) / 2
   }
   polyCI <- getPolyCI(y, sigma, testMat, threshold, a , computeCI = TRUE,
-                      test = test)
+                      test = test, contrasts = contrasts)
   poly <- polyCI$ci
 
+  observed <- as.numeric(contrasts %*% y)
   if(!trueHybrid) {
     noBonferroni <- getPolyCI(y, sigma, testMat, threshold, 2 * a, computeCI = TRUE,
-                              test = test)$ci
-    poly[y < 0, 1] <- noBonferroni[y < 0, 1]
-    poly[y > 0, 2] <- noBonferroni[y > 0, 2]
+                              test = test, contrasts = contrasts)$ci
+    poly[observed < 0, 1] <- noBonferroni[observed < 0, 1]
+    poly[observed > 0, 2] <- noBonferroni[observed > 0, 2]
   }
-
+  
   # Computing global-null CIs ---------
   if(trueHybrid) {
     whichCompute <- which(!polyCI$noCorrection)
@@ -133,20 +161,19 @@ getSwitchCI <- function(y, sigma, testMat, threshold, pthreshold,
     computeFull <- FALSE
   }
 
+  nullCI <- cbind(rep(-Inf, nrow(contrasts)), rep(Inf, nrow(contrasts)))
   if(length(whichCompute) > 0) {
     if(test == "quadratic") {
-      nullCI <- quadraticRB(y, sigma, testMat, threshold, a,
-                            variables = whichCompute,
-                            computeFull = computeFull,
-                            rbIters = rbIters)
+      nullCI[whichCompute, ] <- quadraticRB(y, sigma, testMat, threshold, a,
+                                            variables = contrasts[whichCompute, , drop = FALSE],
+                                            computeFull = computeFull,
+                                            rbIters = rbIters)
     } else if(test == "linear") {
-      nullCI <- linearRB(y, sigma, contrast, threshold, a,
-                         rbIters = rbIters,
-                         variables = whichCompute,
-                         computeFull = computeFull)
+      nullCI[whichCompute, ] <- linearRB(y, sigma, testVec, threshold, a,
+                                         rbIters = rbIters,
+                                         variables = contrasts[whichCompute, , drop = FALSE],
+                                         computeFull = computeFull)
     }
-  } else {
-    nullCI <- cbind(rep(-Inf, p), rep(Inf, p))
   }
 
   ci <- cbind(pmax(poly[, 1], nullCI[, 1]),

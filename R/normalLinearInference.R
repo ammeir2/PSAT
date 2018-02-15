@@ -9,7 +9,7 @@
 #'
 #' @param sigma the covariance matrix of \code{y}.
 #'
-#' @param contrast the test contrast \eqn{a} of size \code{length(y)} used in the aggregate test
+#' @param testVec the test testVec \eqn{a} of size \code{length(y)} used in the aggregate test
 #'
 #' @param threshold the threshold used in the aggregate test, either a vector of size two for the lower and upper
 #' thresholds \eqn{u, l}, or a single number.
@@ -55,8 +55,9 @@
 #'
 #' @seealso \code{\link{mvnQuadratic}}, \code{\link{psatGLM}}, \code{\link{getCI}},
 #' \code{\link{getPval}}.
-mvnLinear <- function(y, sigma, contrast,
+mvnLinear <- function(y, sigma, testVec,
                       threshold = NULL, pval_threshold = 0.05,
+                      contrasts = NULL,
                       test_direction = c("two-sided", "lower", "upper"),
                       estimate_type = c("mle", "naive"),
                       pvalue_type = c("hybrid", "polyhedral", "naive"),
@@ -80,14 +81,24 @@ mvnLinear <- function(y, sigma, contrast,
     stop("Incorrect dimensions for y or sigma!")
   }
 
-  if(length(y) != length(contrast)) {
-    stop("Incorrect dimension for y or contrast!")
+  if(length(y) != length(testVec)) {
+    stop("Incorrect dimension for y or testVec!")
   }
 
   if(confidence_level <= 0 | confidence_level >= 1) {
     stop("confidence_level must be between 0 and 1!")
   }
   confidence_level <- 1 - confidence_level
+  
+  # Checking contrasts
+  if(is.null(contrasts)) {
+    contrasts <- diag(length(y))
+  } 
+  
+  if(ncol(contrasts) != length(y) | 
+     nrow(contrasts) < 1) {
+    stop("Contrasts must be a matrix with length(y) columns! (and at least one row)")
+  }
 
   # Setting threshold ----------------------------
   if(!any(test_direction %in% c("two-sided", "lower", "upper"))) {
@@ -101,20 +112,20 @@ mvnLinear <- function(y, sigma, contrast,
   }
 
   p <- length(y)
-  contrastVar <- as.numeric(t(contrast) %*% sigma %*% contrast)
+  testVecVar <- as.numeric(t(testVec) %*% sigma %*% testVec)
   test_direction <- test_direction[1]
   if(missing(threshold) | is.null(threshold)) {
     if(pthreshold < 0 | pthreshold > 1) {
       stop("If a threshold is not provided, then pval_threshold must be between 0 and 1!")
     } else {
       if(test_direction == "two-sided") {
-        threshold <- qnorm(1 - pval_threshold/2, sd = sqrt(contrastVar))
+        threshold <- qnorm(1 - pval_threshold/2, sd = sqrt(testVecVar))
         threshold <- c(-threshold, threshold)
       } else if(test_direction == "lower") {
-        threshold <- qnorm(pval_threshold, sd = sqrt(contrastVar))
+        threshold <- qnorm(pval_threshold, sd = sqrt(testVecVar))
         threshold <- c(threshold, Inf)
       } else if(test_direction == "upper") {
-        threshold <- qnorm(1 - pval_threshold, sd = sqrt(contrastVar))
+        threshold <- qnorm(1 - pval_threshold, sd = sqrt(testVecVar))
         threshold <- c(-Inf, threshold)
       } else {
         stop("If threshold is not provided then test_direction must be one of `two-sided'
@@ -128,7 +139,7 @@ mvnLinear <- function(y, sigma, contrast,
   } else if(length(threshold) == 1) {
     if(test_direction == "two-sided") {
       warning(paste("Threshold of length one provided for a two sided test_direction rule.
-                    test_direction rule assumed to be contrast < -abs(threshold) or contrast > abs(threshold)"))
+                    test_direction rule assumed to be testVec < -abs(threshold) or testVec > abs(threshold)"))
       threshold <- c(-abs(threshold), abs(threshold))
     } else if(test_direction == "lower") {
       threshold <- c(threshold, Inf)
@@ -137,13 +148,13 @@ mvnLinear <- function(y, sigma, contrast,
     }
   }
 
-  lowerProb <- pnorm(threshold[1], sd = sqrt(contrastVar), lower.tail = TRUE)
-  upperProb <- pnorm(threshold[2], sd = sqrt(contrastVar), lower.tail = FALSE)
+  lowerProb <- pnorm(threshold[1], sd = sqrt(testVecVar), lower.tail = TRUE)
+  upperProb <- pnorm(threshold[2], sd = sqrt(testVecVar), lower.tail = FALSE)
   pthreshold <- lowerProb + upperProb
 
   # Validating test_direction --------------
   y <- as.numeric(y)
-  testStat <- sum(y * contrast)
+  testStat <- sum(y * testVec)
   if(testStat > threshold[1] & testStat < threshold[2]) {
     stop("Test statistic did not cross threshold!")
   }
@@ -157,7 +168,7 @@ mvnLinear <- function(y, sigma, contrast,
 
   # Computing MLE -------------------------
   if("mle" %in% estimate_type) {
-    mleMu <- computeLinearMLE(y, sigma, contrast, threshold)
+    mleMu <- computeLinearMLE(y, sigma, testVec, threshold)
   } else {
     mleMu <- NULL
   }
@@ -174,10 +185,12 @@ mvnLinear <- function(y, sigma, contrast,
 
   if(any(c("global-null", "hybrid") %in% pvalue_type)) {
     nullMu <- rep(0, length(y))
-    nullSample <- sampleLinearTest(nSamples, mu = rep(0, p), sigma, contrast, threshold)
-    nullPval <- numeric(length(y))
-    for(i in 1:length(nullPval)) {
-      nullPval[i] <- 2 * min(mean(y[i] < nullSample[, i]), mean(y[i] > nullSample[, i]))
+    nullSample <- sampleLinearTest(nSamples, mu = rep(0, p), sigma, testVec, threshold)
+    nullPval <- numeric(nrow(contrasts))
+    for(i in 1:nrow(contrasts)) {
+      cont <- sum(contrasts[i, ] * y)
+      contsamp <- as.numeric(nullSample %*% contrasts[i, ])
+      nullPval[i] <- 2 * min(mean(cont < contsamp), mean(cont > contsamp))
     }
     if(pvalue_type[1] == "global-null") {
       pvalue <- nullPval
@@ -191,8 +204,8 @@ mvnLinear <- function(y, sigma, contrast,
   # Computing polyhedral p-values/CIs ---------------------
   if(any(c("polyhedral", "hybrid") %in% pvalue_type) | "polyhedral" %in% ci_type) {
     if(verbose) print("Computing polyhedral p-values/CIs!")
-    polyResult <- getPolyCI(y, sigma, contrast, threshold, confidence_level,
-                            test = "linear")
+    polyResult <- getPolyCI(y, sigma, testVec, threshold, confidence_level,
+                            test = "linear", contrasts = contrasts)
     polyPval <- polyResult$pval
     polyCI <- polyResult$ci
     if(pvalue_type[1] == "polyhedral") pvalue <- polyPval
@@ -215,9 +228,9 @@ mvnLinear <- function(y, sigma, contrast,
   
   # Null Distribution Based CIs ---------------
   if(("global-null" %in% ci_type)) {
-    nullCI <- linearRB(y, sigma, contrast, threshold,
+    nullCI <- linearRB(y, sigma, testVec, threshold,
                        confidence_level, rbIters = rbIters,
-                       variables = NULL, computeFull = trueHybrid)
+                       variables = contrasts, computeFull = trueHybrid)
   } else {
     nullCI <- NULL
   }
@@ -227,8 +240,9 @@ mvnLinear <- function(y, sigma, contrast,
   }
 
   # Naive pvalues and CIs -----------------------
-  naiveCI <- getNaiveCI(y, sigma, confidence_level)
-  naivePval <- 2 * pnorm(-abs(as.numeric(y / sqrt(diag(sigma)))))
+  naiveCI <- getNaiveCI(y, sigma, confidence_level, contrasts, TRUE)
+  naivePval <- naiveCI$pval
+  naiveCI <- naiveCI$ci
   if(ci_type[1] == "naive") {
     ci <- naiveCI
   }
@@ -239,8 +253,9 @@ mvnLinear <- function(y, sigma, contrast,
   # Regime switching CIs -------------------------
   if("switch" %in% ci_type) {
     if(verbose) print("Computing Switching Regime CIs!")
-    switchCI <- getSwitchCI(y, sigma, contrast, threshold, pthreshold,
-                            confidence_level, quadlam,
+    switchCI <- getSwitchCI(y, sigma, testVec, threshold, pthreshold,
+                            confidence_level, contrasts,
+                            quadlam,
                             confidence_level^2, testStat,
                             hybridPval, trueHybrid, rbIters,
                             test = "linear")
@@ -255,7 +270,8 @@ mvnLinear <- function(y, sigma, contrast,
   # Computing hybrid CIs ---------------------
   if("hybrid" %in% ci_type) {
     if(verbose) print("Computing Hybrid CIs!")
-    hybridCI <- getHybridCI(y, sigma, contrast, threshold, pthreshold, confidence_level,
+    hybridCI <- getHybridCI(y, sigma, testVec, threshold, pthreshold, confidence_level,
+                            contrasts = contrasts,
                             hybridPval = hybridPval, computeFull = trueHybrid, 
                             rbIters = rbIters,
                             test = "linear")
@@ -272,9 +288,12 @@ mvnLinear <- function(y, sigma, contrast,
   results$muhat <- muhat
   results$ci <- ci
   results$pvalue <- pvalue
+  results$contrasts <- contrasts
 
-  results$naiveMu <- y
+  results$y <- y
+  results$naiveContrast <- as.numeric(contrasts %*% y)
   results$mleMu <- mleMu
+  results$mleContrast <- as.numeric(contrasts %*% mleMu)
   results$nullSample <- nullSample
   results$nullPval <- pmax(nullPval, naivePval)
   results$polyPval <- polyPval
@@ -286,7 +305,7 @@ mvnLinear <- function(y, sigma, contrast,
   results$hybridPval <- hybridPval
   results$hybridCI <- hybridCI
 
-  results$contrast <- contrast
+  results$testVec <- testVec
   results$sigma <- sigma
   results$pthreshold <- pthreshold
   results$threshold <- threshold
@@ -305,13 +324,13 @@ mvnLinear <- function(y, sigma, contrast,
   return(results)
 }
 
-computeLinearMLE <- function(y, sigma, contrast, threshold) {
-  naive <- sum(y * contrast)
-  cSig <- as.numeric(t(contrast) %*% sigma)
-  cSig <- cSig / as.numeric(cSig %*% contrast)
+computeLinearMLE <- function(y, sigma, testVec, threshold) {
+  naive <- sum(y * testVec)
+  cSig <- as.numeric(t(testVec) %*% sigma)
+  cSig <- cSig / as.numeric(cSig %*% testVec)
   interval <- c(-abs(naive), abs(naive))
   interval <- sort(interval)
-  sd <- as.numeric(sqrt(t(contrast) %*% sigma %*% contrast))
+  sd <- as.numeric(sqrt(t(testVec) %*% sigma %*% testVec))
 
   maximum <- optimize(f = computeLinearDens, interval = interval,
                       maximum = TRUE,

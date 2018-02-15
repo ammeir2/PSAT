@@ -28,6 +28,7 @@ getCI <- function(object, type = NULL, confidence_level = NULL, switchTune = NUL
     stop("Invalid object type!")
   }
 
+  contrasts <- object$contrasts
   aggregateTest <- object$testType
 
   if("psatGLM" %in% class(object)) {
@@ -61,7 +62,7 @@ getCI <- function(object, type = NULL, confidence_level = NULL, switchTune = NUL
     if(recompute | is.null(object$polyCI)) {
       return(getPolyCI(object$naiveMu, object$sigma, object$testMat,
                        object$threshold, confidence_level,
-                       test = aggregateTest)$ci)
+                       test = aggregateTest, contrasts = contrasts)$ci)
     } else {
       return(object$polyCI)
     }
@@ -76,13 +77,14 @@ getCI <- function(object, type = NULL, confidence_level = NULL, switchTune = NUL
       return(object$switchCI)
     } else {
       if(aggregateTest == "linear") {
-        testmat <- object$contrast
+        testmat <- object$testVec
       } else {
         testmat <- object$testMat
       }
-      switch <- getSwitchCI(object$naiveMu, object$sigma,
+      switch <- getSwitchCI(object$y, object$sigma,
                             testmat, object$threshold,
                             object$pthreshold, confidence_level,
+                            contrasts = contrasts,
                             object$quadlam, t2 = switchTune * object$pthreshold,
                             object$testStat, object$hybridPval,
                             object$trueHybrid, test = aggregateTest)
@@ -95,7 +97,7 @@ getCI <- function(object, type = NULL, confidence_level = NULL, switchTune = NUL
     if(!recompute) {
       return(object$naiveCI)
     } else {
-      return(getNaiveCI(object$naiveMu, object$sigma, confidence_level))
+      return(getNaiveCI(object$naiveMu, object$sigma, confidence_level, contrasts = contrasts, FALSE))
     }
   }
 
@@ -113,7 +115,7 @@ getCI <- function(object, type = NULL, confidence_level = NULL, switchTune = NUL
                             confidence_level, computeFull = TRUE)
         } else if(aggregateTest == "linear") {
           ci <- linearRB(object$naiveMu, object$sigma,
-                         object$contrast, object$threshold,
+                         object$testVec, object$threshold,
                          object$sigma, computeFull = TRUE)
         }
         return(ci)
@@ -260,7 +262,7 @@ getPvalLinear <- function(object, type = NULL) {
   # Polyhedral ----------------------
   if(type == "polyhedral") {
     if(is.null(object$polyPval)) {
-      return(getPolyCI(object$naiveMu, object$sigma, object$contrast,
+      return(getPolyCI(object$naiveMu, object$sigma, object$testVec,
                        object$threshold, confidence_level, FALSE,
                        test = "linear")$pval)
     } else {
