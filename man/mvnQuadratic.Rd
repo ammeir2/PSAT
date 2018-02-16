@@ -4,8 +4,8 @@
 \alias{mvnQuadratic}
 \title{Inference for Normal Means after Aggregate Testing}
 \usage{
-mvnQuadratic(y, sigma, testMat = "wald", contrasts = NULL,
-  threshold = NULL, pval_threshold = 0.05, estimate_type = c("mle",
+mvnQuadratic(y, sigma, testMat = "wald", threshold = NULL,
+  pval_threshold = 0.05, contrasts = NULL, estimate_type = c("mle",
   "naive"), pvalue_type = c("hybrid", "polyhedral", "naive"),
   ci_type = c("switch", "polyhedral", "naive"), confidence_level = 0.95,
   verbose = TRUE, control = psatControl())
@@ -21,6 +21,9 @@ mvnQuadratic(y, sigma, testMat = "wald", contrasts = NULL,
 
 \item{pval_threshold}{the signficance level of the aggregate test.
 Overrided by \code{threshold} if both are provided.}
+
+\item{contrasts}{an optional matrix of contrasts to be tested: must have number of columns 
+identical to the length of \code{y}. If left as \code{NULL}, the coorinates of \code{y} will be tested by default.}
 
 \item{estimate_type}{the types of point estimates to compute and report. The first
 estimator listed will be used as the default method.}

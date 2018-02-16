@@ -9,6 +9,7 @@ output:
 
 ```{r setup, include=FALSE}
 knitr::opts_chunk$set(echo = TRUE)
+library(magrittr)
 ```
 
 ## Installing Package
@@ -17,13 +18,13 @@ devtools::install_github("ammeir2/PSAT")
 ```
 
 ## Inference for Normal Means 
-The PSAT pacakge provides functionalities for performing inference on multivariate normal vectors and generalized linear models that pass a qudratic aggregate tests. Suppose that we observe $y \sim N(\mu, \Sigma)$ and that we wish to perform inference on the individual coordinates of $\mu$ only if we can reject a quadratic test of the form:
+The PSAT pacakge provides functionalities for performing inference on multivariate normal vectors and generalized linear models that pass a qudratic aggregate tests. Suppose that we observe $y \sim N(\mu, \Sigma)$ and that we are interested in conducting inference on the individual coordinates of $\mu$ only if we can reject a quadratic test of the form:
 
 $$
 y^{T} K y > c > 0
 $$
 
-for some pre-determined threshold $c$. Then, we must account for the fact that we have selected the model via a data driven method or in order to obtain valid p-values, confidence intervals that achieve the desire coverage rate and efficient point estimates. Let us begin with generating a dataset by sampling multivariate normal vectors and screening with a Wald test, so $K = \Sigma^{-1}$.
+for some pre-determined threshold $c$. Then, we must account for the fact that we have selected the model via a data driven method in order to obtain valid p-values, confidence intervals that achieve the desired coverage rate, and efficient point estimates. We begin by generating a dataset by sampling multivariate normal vectors and screening with a Wald test, so $K = \Sigma^{-1}$.
 
 ```{r generateNormal, warning = FALSE, message = FALSE, cache = TRUE}
 # Tests for wald test ------------------------
@@ -52,7 +53,8 @@ while(testStat < threshold) {
 print(round(y, 2))
 ```
 
-Our threshold is `r round(threshold, 1)` and the realized test statistic is `r round(testStat, 2)`, so we just barely passed the test. Now, let us use the `mvnQuadratic` function to perform inference. The `mvnQuadratic` function can be used to compute several different types of confidence intervals and p-values. Generally speaking, the confidence interval methods `global-null` and `switch` are quite computationally intensive while the `polyhedral` method is very fast, yet somewhat less powerful when the signal is sparse. Similarly, the p-value methods `hybrid` and `global-null` are computationally intensive while the `polyhedral` method is not.
+Our threshold is `r round(threshold, 1)` and the realized test statistic is `r round(testStat, 2)`, so we just barely passed the aggregate test. Now, let us use the `mvnQuadratic` function to conduct inference. The `mvnQuadratic` function can be used to compute several different types of confidence intervals and p-values. Generally speaking, the confidence interval methods `global-null` and `switch` are quite computationally intensive while the `polyhedral` method is very fast, yet somewhat less powerful when the signal is sparse. Similarly, the p-value methods `hybrid` and `global-null` are computationally intensive and the `polyhedral` method is not. In the following, we also demonstrate an option to provide the inference function with an optional set of contrasts to be tested/estimated as a matrix of dimension $l \times p$ where $l$ is the number of contrasts. If no such matrix is provided, the function will estimated the mean vector of $y$. Specifcally, we test the difference between the first and second coordinates of $y$, as well as the seventh and eighth coordinates. 
+
 
 ```{r allfit, cache=TRUE}
 library(PSAT)
@@ -123,18 +125,20 @@ The `mvnQuadratic` function can also be used to perform inference for quadratic 
 
 ```{r sgdfit,cache=TRUE}
 testmat <- solve(sigma)
-sgdfit <- mvnQuadratic(y, sigma, testMat = testmat, threshold = NULL, pval_threshold = pthreshold,
+sgdfit <- mvnQuadratic(y, sigma, testMat = testmat, 
+                       threshold = NULL, pval_threshold = pthreshold,
                        estimate_type = c("mle", "naive"),
                        pvalue_type = c("polyhedral", "hybrid", "naive"),
                        ci_type = c("polyhedral", "switch", "naive"),
                        confidence_level = .95, verbose = FALSE,
                        control = psatControl(optimMethod = "SGD"))
-nmfit <- mvnQuadratic(y, sigma, testMat = testmat, threshold = NULL, pval_threshold = pthreshold,
-                       estimate_type = c("mle", "naive"),
-                       pvalue_type = c("polyhedral", "hybrid", "naive"),
-                       ci_type = c("polyhedral", "switch", "naive"),
-                       confidence_level = .95, verbose = FALSE,
-                       control = psatControl(optimMethod = "Nelder-Mead"))
+nmfit <- mvnQuadratic(y, sigma, testMat = testmat, threshold = NULL, 
+                      pval_threshold = pthreshold,
+                      estimate_type = c("mle", "naive"),
+                      pvalue_type = c("polyhedral", "hybrid", "naive"),
+                      ci_type = c("polyhedral", "switch", "naive"),
+                      confidence_level = .95, verbose = FALSE,
+                      control = psatControl(optimMethod = "Nelder-Mead"))
 
 ```
 
@@ -164,7 +168,7 @@ $$
 where the weight matrix $W$ may depend on the estimated regression coefficients $\hat\beta$ and the type of GLM used. Next, let us generate data from a logistic regression model using an arbitrary matrix $K$ as our test matrix.
 
 ```{r, logisitcdata}
-set.seed(1234)
+# set.seed(1234)
 pthreshold <- 0.001
 n <- 500
 p <- 20
@@ -194,7 +198,14 @@ while(TRUE) {
 Performing inference and plotting estimates: 
 
 ```{r, cache = TRUE}
+diffCont <- matrix(0, nrow = 1, ncol = ncol(X))
+diffCont[1, 1] <- 1
+diffCont[1, 2] <- -1
+contrasts <- rbind(diag(ncol(X)), diffCont)
+rownames(contrasts) <- paste("V", 1:p, sep ="") %>% c("diff")
+
 glmfit <- psatGLM(X, y, test = testmat, family = "binomial",
+                  contrasts = contrasts,
                   resid_sd = c("naive", "null"),
                   threshold = NULL, pval_threshold = pthreshold,
                   estimate_type = c("mle", "naive"),
@@ -205,7 +216,8 @@ glmfit <- psatGLM(X, y, test = testmat, family = "binomial",
 ```
 
 ```{r}
-plot(glmfit, type = "estimates", true = beta)
+trueVal <- as.numeric(contrasts %*% beta)
+plot(glmfit, type = "estimates", true = trueVal)
 plot(glmfit, type = "p-values", adjust = "none", threshold = c(0.05, 0.05 / p))
 ```
 

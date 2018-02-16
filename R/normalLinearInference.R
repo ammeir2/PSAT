@@ -17,6 +17,9 @@
 #' @param pval_threshold the signficance level of the aggregate test.
 #' Overrided by \code{threshold} if both are provided.
 #' 
+#' @param contrasts an optional matrix of contrasts to be tested: must have number of columns 
+#' identical to the length of \code{y}. If left as \code{NULL}, the coorinates of \code{y} will be tested by default. 
+#' 
 #' @param test_direction whether the linear test is one-sided or two-sided. Will be used if the provided threshold 
 #' is a scalar, if lower then the tests will be \eqn{a'y < threshold} and if upper then the test will be \eqn{a'y > threshold}.
 #'
@@ -204,8 +207,8 @@ mvnLinear <- function(y, sigma, testVec,
   # Computing polyhedral p-values/CIs ---------------------
   if(any(c("polyhedral", "hybrid") %in% pvalue_type) | "polyhedral" %in% ci_type) {
     if(verbose) print("Computing polyhedral p-values/CIs!")
-    polyResult <- getPolyCI(y, sigma, testVec, threshold, confidence_level,
-                            test = "linear", contrasts = contrasts)
+    polyResult <- suppressWarnings(getPolyCI(y, sigma, testVec, threshold, confidence_level,
+                                             test = "linear", contrasts = contrasts))
     polyPval <- polyResult$pval
     polyCI <- polyResult$ci
     if(pvalue_type[1] == "polyhedral") pvalue <- polyPval

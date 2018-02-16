@@ -4,18 +4,21 @@
 \alias{psatGLM}
 \title{Inference for Generalized Linear Models Selected via an Aggregate Test}
 \usage{
-psatGLM(X, y, test = "wald", test_direction = c("two-sided", "lower",
-  "upper"), family = "gaussian", resid_sd = c("null", "naive"),
-  threshold = NULL, pval_threshold = 0.05, estimate_type = c("mle",
-  "naive"), pvalue_type = c("hybrid", "polyhedral", "naive"),
-  ci_type = c("switch", "polyhedral", "naive"), confidence_level = 0.95,
-  verbose = TRUE, control = psatControl())
+psatGLM(X, y, contrasts = NULL, test = "wald",
+  test_direction = c("two-sided", "lower", "upper"), family = "gaussian",
+  resid_sd = c("null", "naive"), threshold = NULL, pval_threshold = 0.05,
+  estimate_type = c("mle", "naive"), pvalue_type = c("hybrid", "polyhedral",
+  "naive"), ci_type = c("switch", "polyhedral", "naive"),
+  confidence_level = 0.95, verbose = TRUE, control = psatControl())
 }
 \arguments{
 \item{X}{the design matrix of the regression model without an
 intercept.}
 
 \item{y}{the observed dependent variable.}
+
+\item{contrasts}{an optional matrix of contrasts to be tested: must have number of columns 
+identical to \code{ncol(X)}. If left as \code{NULL}, the regression coefficients will be tested by default.}
 
 \item{test}{For an aggregate test, the string `wald` or a semi-positive matrix
 of dimension \code{ncol(X) X ncol{X}}.

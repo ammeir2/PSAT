@@ -14,6 +14,9 @@
 #'
 #' @param pval_threshold the signficance level of the aggregate test.
 #' Overrided by \code{threshold} if both are provided.
+#' 
+#' @param contrasts an optional matrix of contrasts to be tested: must have number of columns 
+#' identical to the length of \code{y}. If left as \code{NULL}, the coorinates of \code{y} will be tested by default. 
 #'
 #' @param estimate_type the types of point estimates to compute and report. The first
 #' estimator listed will be used as the default method.
@@ -71,8 +74,8 @@
 #' \code{\link{coef.mvnQuadratic}}, \code{\link{plot.mvnQuadratic}},
 #' \code{\link{psatGLM}}.
 mvnQuadratic <- function(y, sigma, testMat = "wald",
-                         contrasts = NULL,
                          threshold = NULL, pval_threshold = 0.05,
+                         contrasts = NULL,
                          estimate_type = c("mle", "naive"),
                          pvalue_type = c("hybrid", "polyhedral", "naive"),
                          ci_type = c("switch", "polyhedral", "naive"),
@@ -255,9 +258,9 @@ mvnQuadratic <- function(y, sigma, testMat = "wald",
   # Computing polyhedral p-values/CIs ---------------------
   if(any(c("polyhedral", "hybrid") %in% pvalue_type) | "polyhedral" %in% ci_type) {
     if(verbose) print("Computing polyhedral p-values/CIs!")
-    polyResult <- getPolyCI(y, sigma, testMat, threshold, confidence_level,
-                            contrasts = contrasts,
-                            truncPmethod = truncPmethod)
+    polyResult <- suppressWarnings(getPolyCI(y, sigma, testMat, threshold, confidence_level,
+                                             contrasts = contrasts,
+                                             truncPmethod = truncPmethod))
     polyPval <- polyResult$pval
     polyCI <- polyResult$ci
     if(pvalue_type[1] == "polyhedral") pvalue <- polyPval

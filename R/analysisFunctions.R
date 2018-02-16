@@ -470,9 +470,17 @@ predict.psatGLM <- function(object, newX = NULL, ...) {
 summary.psatGLM <- function(object, estimate_type = NULL, pvalue_type = NULL,
                                  ci_type = NULL, confidence_level = NULL, ...) {
   est <- coef(object, type = estimate_type)
+  contrasts <- object$contrasts
+  contrastInference <- !identical(contrasts, diag(length(est) - 1))
+  if(contrastInference) {
+    est <- est[-1]
+    est <- as.numeric(contrasts %*% est)
+  }
+  
   if(is.null(estimate_type)) {
     estimate_type <- object$estimate_type[1]
   }
+  
   if(estimate_type == "mle") {
     estimate_type <- "MLE"
   } else {
@@ -483,6 +491,7 @@ summary.psatGLM <- function(object, estimate_type = NULL, pvalue_type = NULL,
   if(is.null(pvalue_type)) {
     pvalue_type <- object$pvalue_type[1]
   }
+  
   if(pvalue_type == "naive") {
     pvalue_type <- "Naive"
   } else if(pvalue_type == "polyhedral") {
@@ -498,6 +507,7 @@ summary.psatGLM <- function(object, estimate_type = NULL, pvalue_type = NULL,
   if(is.null(confidence_level)) {
     confidence_level <- object$confidence_level
   }
+  object$y <- object$naiveBeta[-1]
   ci <- getCI(object, type = ci_type, confidence_level = confidence_level)
   if(is.null(ci_type)) {
     ci_type <- object$ci_type[1]
@@ -517,11 +527,27 @@ summary.psatGLM <- function(object, estimate_type = NULL, pvalue_type = NULL,
   intsd <- object$interceptsd
   intpval <- 2 * pnorm(-abs(est[1] / intsd))
   intci <- est[1] + c(-1, 1) * intsd * qnorm(1 - confidence_level / 2)
+  
+  if(!contrastInference) {
+    lci <- c(intci[1], ci[, 1])
+    uci <- c(intci[2], ci[, 2])
+    pval <- c(intpval, pvalue)
+  } else {
+    lci <- ci[, 1]
+    uci <- ci[, 2]
+    pval <- pvalue
+  }
 
-  coefficients <- data.frame(estimates = est, lCI = c(intci[1], ci[, 1]),
-                             uCI = c(intci[2], ci[, 2]),
-                             pvalue = c(intpval, pvalue))
-  rownames <- colnames(object$X)
+  coefficients <- data.frame(estimates = est, 
+                             lCI = lci, uCI = uci,
+                             pvalue = pval)
+  
+  if(!contrastInference) {
+    rownames <- colnames(object$X)
+  } else {
+    rownames <- rownames(contrasts)
+  }
+  
   if(is.null(rownames)) {
     rownames <- paste("V", 0:(length(est) - 1), sep ="")
     rownames[1] <- "intercept"
@@ -535,6 +561,7 @@ summary.psatGLM <- function(object, estimate_type = NULL, pvalue_type = NULL,
   sum$pvalue_type <- pvalue_type
   sum$estimate_type <- estimate_type
   sum$testType <- object$testType
+  sum$contrastInference <- contrastInference
   class(sum) <- "psatGLM_summary"
   return(sum)
 }
@@ -546,7 +573,11 @@ print.psatGLM_summary <- function(x, ...) {
   cat("Estimation Method: ", sum$estimate_type, "\n")
   cat("P-value Type: ", sum$pvalue_type, "\n")
   cat("Confidence Interval Type: ", sum$ci_type, "      Confidence Level:", sum$confidence_level, "\n\n")
-  cat("Table of Coefficients:\n")
+  if(x$contrastInference) {
+    cat("Tested Contrasts:\n")
+  } else {
+    cat("Table of Coefficients:\n")
+  }
   coefs <- sum$coefficients
   coefs[, 1:3] <- round(coefs[, 1:3], 5)
   names(coefs) <- c("Estimate", "Lower-CI", "Upper-CI", "P-Value")

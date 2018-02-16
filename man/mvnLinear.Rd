@@ -23,6 +23,9 @@ thresholds \eqn{u, l}, or a single number.}
 \item{pval_threshold}{the signficance level of the aggregate test.
 Overrided by \code{threshold} if both are provided.}
 
+\item{contrasts}{an optional matrix of contrasts to be tested: must have number of columns 
+identical to the length of \code{y}. If left as \code{NULL}, the coorinates of \code{y} will be tested by default.}
+
 \item{test_direction}{whether the linear test is one-sided or two-sided. Will be used if the provided threshold 
 is a scalar, if lower then the tests will be \eqn{a'y < threshold} and if upper then the test will be \eqn{a'y > threshold}.}
 

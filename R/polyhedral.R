@@ -29,7 +29,7 @@ polyhedral.workhorse <- function(eta, u, sigma, testMat, threshold,
 
   # Computing CI ----------------
   if(computeCI) {
-    ci <- findPolyCIlimits(theta, etaSigma, lower, upper, alpha)
+    ci <- suppressWarnings(findPolyCIlimits(theta, etaSigma, lower, upper, alpha))
   } else {
     ci <- NULL
   }
@@ -62,7 +62,7 @@ linearPolyhedral <- function(eta, u, sigma, a, threshold,
 
   # Computing CI ----------------
   if(computeCI) {
-    ci <- findPolyCIlimits(theta, etaSigma, lower, upper, alpha)
+    ci <- suppressWarnings(findPolyCIlimits(theta, etaSigma, lower, upper, alpha))
   } else {
     ci <- NULL
   }
@@ -160,7 +160,7 @@ computeCondExp <- function(lower, upper, mu = 0, sd = 1, side = "upper") {
 # lower and upper are polyherdal truncations (through conditioning on selection event and W)
 computeTestExp <- function(c1, c2, lower, upper, mu, sd) {
   if(c1 > c2) {
-    stop("c1 must be smaller than c2!")
+    return(Inf)
   }
   
   if(c2 < lower) {

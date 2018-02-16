@@ -25,6 +25,7 @@
 plot.psatGLM <- function(x, type = c("estimates", "solution_path", "p-values"), ... ) {
   object <- x
   object$naiveMu <- object$naiveBeta[-1]
+  object$y <- object$naiveBeta[-1]
   if(!is.null(object$mleBeta)) {
     object$mleMu <- object$mleBeta[-1]
   }
@@ -87,6 +88,7 @@ plot.mvnLinear <- function(x, type = c("estimates", "solution-path", "p-values")
 plotEstimates <- function(object, true = NULL, offset = 0.12) {
   contrasts <- object$contrasts
   offsetMulti <- offset
+  y <- object$y
   naive <- as.numeric(contrasts %*% y)
   p <- nrow(contrasts)
   mle <- object$mleContrast

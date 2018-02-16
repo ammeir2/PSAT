@@ -9,8 +9,11 @@
 #' intercept.
 #'
 #' @param y the observed dependent variable.
+#' 
+#' @param contrasts an optional matrix of contrasts to be tested: must have number of columns 
+#' identical to \code{ncol(X)}. If left as \code{NULL}, the regression coefficients will be tested by default. 
 #'
-#' @param test For an aggregate test, the string `wald` or a semi-positive matrix
+#' @param test For a quadratic test, the string `wald` or a semi-positive matrix
 #' of dimension \code{ncol(X) X ncol{X}}.
 #' For a linear test a vector of length \code{ncol(X)}.
 #'
@@ -62,7 +65,8 @@
 #' \code{\link{getPval}}, \code{\link{plot.psatGLM}},
 #' \code{\link{summary.psatGLM}}, \code{\link{coef.pastGLM}},
 #' \code{\link{predict.psatGLM}}
-psatGLM <- function(X, y, test = "wald",
+psatGLM <- function(X, y, contrasts = NULL, 
+                    test = "wald",
                     test_direction = c("two-sided", "lower", "upper"),
                     family = "gaussian",
                     resid_sd = c("null", "naive"),
@@ -127,7 +131,7 @@ psatGLM <- function(X, y, test = "wald",
   }
 
   if(testType == "quadratic") {
-    mvnfit <- mvnQuadratic(naiveBeta, sigma, testMat = test,
+    mvnfit <- mvnQuadratic(naiveBeta, sigma, testMat = test, contrasts = contrasts,
                            threshold = threshold, pval_threshold = pval_threshold,
                            estimate_type = estimate_type,
                            pvalue_type = pvalue_type,
@@ -135,7 +139,8 @@ psatGLM <- function(X, y, test = "wald",
                            confidence_level = confidence_level,
                            verbose = verbose, control = control)
   } else if(testType == "linear") {
-    mvnfit <- mvnLinear(y = naiveBeta, sigma = sigma, contrast = test,
+    mvnfit <- mvnLinear(y = naiveBeta, sigma = sigma, testVec = test, 
+                        contrasts = contrasts,
                         threshold = threshold, pval_threshold = pval_threshold,
                         test_direction = test_direction,
                         estimate_type = estimate_type,
