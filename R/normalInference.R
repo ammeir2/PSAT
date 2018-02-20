@@ -95,6 +95,7 @@ mvnQuadratic <- function(y, sigma, testMat = "wald",
   trueHybrid <- control$trueHybrid
   rbIters <- control$rbIters
   truncPmethod <- control$truncPmethod
+  quadraticSampler <- control$quadraticSampler
 
   # Validating parameters --------------------
   if(!(nullMethod %in% c("zero-quantile", "RB"))) {
@@ -201,16 +202,24 @@ mvnQuadratic <- function(y, sigma, testMat = "wald",
       solutionPath <- NULL
     } else if(quadtest == "other") {
       if(control$optimMethod == "SGD") {
-        sgdfit <- quadraticSGD(y, sigma, invcov, testMat, threshold,
-                               stepRate = 0.75, stepCoef = sgdStep,
-                               delay = 20, sgdSteps = nsteps, assumeCovergence = 800,
-                               mhIters = 40)
-        mleMu <- sgdfit$mle
-        solutionPath <- sgdfit$solutionPath
-      } else {
+        if(any(quadlam < 10e-8)) {
+          control$optimMethod <- "Nelder-Mead"
+          warning("Test matrix nearly singualr: using Nelder-Mead for MLE computation")
+        } else {
+          sgdfit <- quadraticSGD(y, sigma, invcov, testMat, threshold,
+                                 stepRate = 0.75, stepCoef = sgdStep,
+                                 delay = 20, sgdSteps = nsteps, assumeCovergence = 800,
+                                 mhIters = 40)
+          mleMu <- sgdfit$mle
+          solutionPath <- sgdfit$solutionPath
+        }
+      } 
+      
+      if(control$optimMethod == "Nelder-Mead") {
         mleMu <- quadraticNM(y, sigma, invcov, testMat, threshold)
         solutionPath <- NULL
       }
+      
       optimLambda <- NULL
     }
   } else {
@@ -233,13 +242,31 @@ mvnQuadratic <- function(y, sigma, testMat = "wald",
      (nullMethod == "zero-quantile")) {
     if(verbose) print(paste("Sampling from null distribution! (", nSamples, " samples)", sep = ""))
     nullMu <- rep(0, length(y))
-    nullSample <- sampleQuadraticConstraint(nullMu, sigma,
-                                            init = y,
-                                            threshold, testMat,
-                                            sampSize = nSamples,
-                                            burnin = 1000,
-                                            trim = 50)
+    
+    if(quadraticSampler == "PSAT") {
+      if(any(quadlam < 10e-8)) {
+        warning("Test matrix nearly singular: using tmg sampler instead of PSAT sampler!")
+        quadraticSampler <- "tmg"
+      } else {
+        nullSample <- sampleQuadraticConstraint(nullMu, sigma,
+                                                init = y,
+                                                threshold, testMat,
+                                                sampSize = nSamples,
+                                                burnin = 1000,
+                                                trim = 50)
+      }
+    }
+    
+    if(quadraticSampler == "tmg") {
+      nullSample <- rtmg(n = nSamples * 10,
+                         M = invcov,
+                         r = as.numeric(invcov %*% nullMu),
+                         initial = y,
+                         q = list(a = list(A = testMat, B = rep(0, p), C = -threshold)),
+                         burn.in = 200)
+    }
     nullPval <- numeric(nrow(contrasts))
+    
     for(i in 1:nrow(contrasts)) {
       contt <- sum(contrasts[i, ] * y)
       contsamp <- as.numeric(nullSample %*% contrasts[i, ])
@@ -458,7 +485,8 @@ psatControl <- function(switchTune = NULL,
                         trueHybrid = FALSE,
                         rbIters = NULL,
                         optimMethod = c("Nelder-Mead", "SGD"),
-                        truncPmethod = c("UMPU", "symmetric")) {
+                        truncPmethod = c("UMPU", "symmetric"),
+                        quadraticSampler = c("PSAT", "tmg")) {
   control <- list()
   control$switchTune <- switchTune
   control$nullMethod <- nullMethod[1]
@@ -469,6 +497,7 @@ psatControl <- function(switchTune = NULL,
   control$rbIters <- rbIters
   control$optimMethod <- optimMethod[1]
   control$truncPmethod <- truncPmethod[1]
+  control$quadraticSampler <- quadraticSampler[1]
   class(control) <- "quadratic_control"
   return(control)
 }

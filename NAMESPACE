@@ -36,6 +36,7 @@ importFrom("CompQuadForm", "liu")
 importFrom("truncnorm", "rtruncnorm")
 importFrom("truncnorm", "qtruncnorm")
 importFrom("truncnorm", "etruncnorm")
+importFrom("tmg", "rtmg")
 
 
 
