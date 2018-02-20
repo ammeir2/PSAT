@@ -7,14 +7,14 @@ sampleQuadraticConstraint <- function(mu, sigma, threshold, testMat,
 
   # Pre-processing
   testEigen <- eigen(testMat)
-  invTestMat <- testEigen$vectors %*% diag(1/(testEigen$values))
-  invTestMat <- invTestMat %*% t(testEigen$vectors)
+  testEigen$values <- Re(testEigen$values) %>% pmax(0)
+  testEigen$vectors <- Re(testEigen$vectors)
+  invTestMat <- ginv(testMat)
   sqrtTestMat <- testEigen$vectors %*% diag(sqrt(testEigen$values))
   sqrtTestMat <- sqrtTestMat %*% t(testEigen$vectors)
-  invSqrtTestMat <- testEigen$vectors %*% diag(1 / sqrt(testEigen$values))
-  invSqrtTestMat <- invSqrtTestMat %*% t(testEigen$vectors)
+  invSqrtTestMat <- ginv(sqrtTestMat)
   sigma <- t(sqrtTestMat) %*% sigma %*% sqrtTestMat
-  precision <- solve(sigma)
+  precision <- ginv(sigma)
   mu <- sqrtTestMat %*% mu
   if(!is.null(init)) {
     init <- sqrtTestMat %*% init

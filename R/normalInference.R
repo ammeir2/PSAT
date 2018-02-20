@@ -241,9 +241,9 @@ mvnQuadratic <- function(y, sigma, testMat = "wald",
                                             trim = 50)
     nullPval <- numeric(nrow(contrasts))
     for(i in 1:nrow(contrasts)) {
-      cont <- sum(contrasts[i, ] * y)
+      contt <- sum(contrasts[i, ] * y)
       contsamp <- as.numeric(nullSample %*% contrasts[i, ])
-      nullPval[i] <- 2 * min(mean(cont < contsamp), mean(cont > contsamp))
+      nullPval[i] <- 2 * min(mean(contt < contsamp), mean(contt > contsamp))
     }
     
     if(pvalue_type[1] == "global-null") {

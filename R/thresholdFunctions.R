@@ -1,10 +1,15 @@
 getQudraticLam <- function(testMat, sigma, justlam = TRUE) {
   c <- chol(sigma)
   tempmat <- c %*% testMat %*% t(c)
-  eig <- eigen(tempmat)
-  vec <- eig$vectors
+  # eig <- eigen(tempmat)
+  # vec <- eig$vectors
+  # P <- t(vec)
+  # lam <- eig$values
+
+  eig <- svd(tempmat)
+  vec <- eig$v
   P <- t(vec)
-  lam <- eig$values
+  lam <- eig$d
   if(justlam) {
     return(lam)
   } else {
