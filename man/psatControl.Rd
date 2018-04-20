@@ -7,7 +7,8 @@
 psatControl(switchTune = NULL, nullMethod = c("RB", "zero-quantile"),
   nSamples = NULL, sgdStep = NULL, nsteps = 1000, trueHybrid = FALSE,
   rbIters = NULL, optimMethod = c("Nelder-Mead", "SGD"),
-  truncPmethod = c("UMPU", "symmetric"))
+  truncPmethod = c("UMPU", "symmetric"), quadraticSampler = c("PSAT",
+  "tmg"))
 }
 \arguments{
 \item{switchTune}{tuning parameter for regime switching confidence intervals, 

@@ -1,7 +1,16 @@
-^.*\.Rproj$
-^\.Rproj\.user$
-tests/*
-figures/*
+.Rproj.user
+.Rhistory
+.RData
+.Ruserdata
 mleExperiments/*
 data analysis/*
 simulations/*
+figures/*
+src/PSAT.so
+src/quadraticSampler.o
+src/RcppExports.o
+vignettes/linear_tests_cache/*
+vignettes/quadratic_tests_cache/*
+vignettes/rsconnect/*
+vignettes/*
+tests/*

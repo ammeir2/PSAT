@@ -20,7 +20,7 @@ intercept.}
 \item{contrasts}{an optional matrix of contrasts to be tested: must have number of columns 
 identical to \code{ncol(X)}. If left as \code{NULL}, the regression coefficients will be tested by default.}
 
-\item{test}{For an aggregate test, the string `wald` or a semi-positive matrix
+\item{test}{For a quadratic test, the string `wald` or a semi-positive matrix
 of dimension \code{ncol(X) X ncol{X}}.
 For a linear test a vector of length \code{ncol(X)}.}
 

@@ -400,7 +400,9 @@ mvnQuadratic <- function(y, sigma, testMat = "wald",
   results$y <- y
   results$naiveContrast <- as.numeric(contrasts %*% y)
   results$mleMu <- mleMu
-  results$mleContrast <- as.numeric(contrasts %*% mleMu)
+  if(!is.null(mleMu)) {
+    results$mleContrast <- as.numeric(contrasts %*% mleMu)
+  } 
   results$solutionPath <- solutionPath
   results$nullSample <- nullSample
   results$nullDist <- nullDist
