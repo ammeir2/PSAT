@@ -4,6 +4,7 @@
 .Ruserdata
 mleExperiments/*
 data analysis/*
+fullGenome/results/*
 simulations/*
 figures/*
 src/PSAT.so

@@ -2,8 +2,8 @@ polyhedral.workhorse <- function(eta, u, sigma, testMat, threshold,
                                  computeCI = FALSE, alpha = 0.05,
                                  truncPmethod = "symmetric") {
   # Computing truncation ----------------
-  c <- as.numeric(t(eta) %*% sigma %*% eta)^-1 * sigma %*% eta
-  v <- u - c %*% t(eta) %*% u
+  c <- as.numeric(as.numeric(t(eta) %*% sigma %*% eta)^-1 * sigma %*% eta)
+  v <- as.numeric(u - c %*% t(eta) %*% u)
   vKc <- as.numeric(t(v) %*% testMat %*% c)
   cKc <- as.numeric(t(c) %*% testMat %*% c)
   vKv <- as.numeric(t(v) %*% testMat %*% v)
@@ -20,7 +20,7 @@ polyhedral.workhorse <- function(eta, u, sigma, testMat, threshold,
   # Computing p-value --------------
   theta <- as.numeric(t(eta) %*% u)
   etaSigma <- as.numeric(t(eta) %*% sigma %*% eta)
-  if(truncPmethod == "symmetric") {
+  if(truncPmethod == "symmetric" | delta < 0) {
     etaPval <- ptruncNorm(0, theta, sqrt(etaSigma), lower, upper)
     etaPval <- 2 * min(etaPval, 1 - etaPval)
   } else {

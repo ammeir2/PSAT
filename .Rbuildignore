@@ -6,6 +6,7 @@ mleExperiments/*
 data analysis/*
 simulations/*
 figures/*
+fullGenome/results/*
 src/PSAT.so
 src/quadraticSampler.o
 src/RcppExports.o
@@ -14,3 +15,5 @@ vignettes/quadratic_tests_cache/*
 vignettes/rsconnect/*
 vignettes/*
 tests/*
+^.*\.Rproj$
+^\.Rproj\.user$

@@ -68,6 +68,7 @@ genGene <- function(minGeneSize, maxGeneSize, nSubjects, rho, prevNorm,
   X <- X[1:nSubjects, ] + X[(nSubjects + 1):(2 * nSubjects), ]
   someNotZero <- apply(X, 2, function(x) any(x != 0))
   X <- X[, someNotZero]
+  nVariants <- ncol(X)
   sparseX <- Matrix(X, sparse = TRUE)
   X <- scale(X)
   nonNull <- runif(1) <= 1 - pNullGenes
@@ -145,6 +146,7 @@ runSim <- function(config) {
   for(g in 1:genomSize) {
     # Getting sparse Matrix 
     X <- sparseMats[[g]] %>% as.matrix() %>% scale()
+    sparseMats[[g]] <- 0 # saving memory
 
     # Aggregate testing -------
     XtX <- t(X) %*% X
@@ -156,10 +158,12 @@ runSim <- function(config) {
     waldStat <- as.numeric(t(naiveCoef) %*% waldMat %*% naiveCoef)
     critVal <- qchisq(pvalThreshold / genomSize, df = ncol(X), lower.tail = FALSE)
     trueCoef <- XtXinv %*% t(X) %*% yMean
+    naiveSD <- sqrt(diag(coefCov)) * sd(y - as.numeric(X %*% naiveCoef)) / sd(y)
     # print(c(g, ncol(X), waldStat, critVal, sum(abs(trueCoef)), dat$nonzero))
     if(waldStat > critVal) {
       selectedGenes[[slot]] <- list(obs = naiveCoef, 
                                     cov = coefCov, 
+                                    naiveSD = naiveSD,
                                     true = trueCoef,
                                     waldMat = waldMat,
                                     threshold = critVal)
@@ -172,6 +176,7 @@ runSim <- function(config) {
   
   if(slot == 1) {
     result <- list()
+    result[[1]] <- list()
     result[[1]]$config <- config
     print("No significant genes found!")
     return(result)
@@ -189,6 +194,7 @@ runSim <- function(config) {
     naive <- gene$obs %>% as.numeric()
     true <- gene$true %>% as.numeric()
     sds <- sqrt(diag(gene$cov))
+    naiveSD <- gene$naiveSD
     truePvals <- 2 * pnorm(-abs(true /sds))
     empNonzero <- sum(truePvals < 0.05)
     
@@ -204,13 +210,13 @@ runSim <- function(config) {
     polyCover <- checkInclusion(psatFit$polyCI, true)
     bbQuantile <- length(selectedGenes) * 0.05 / 2 / genomSize
     bbCritVal <- qnorm(1 - bbQuantile)
-    bbCI <- naive + cbind(-sds * bbCritVal, sds * bbCritVal)
+    bbCI <- naive + cbind(-naiveSD * bbCritVal, naiveSD * bbCritVal)
     bbCover <- checkInclusion(bbCI, true)
     
     # Avg Power 
     hybridAvgPower <- min(sum(p.adjust(psatFit$hybridPval, method = "BH") < 0.05) / empNonzero, 1)
     polyAvgPower <- min(sum(p.adjust(psatFit$polyPval, method = "BH") < 0.05) / empNonzero, 1)
-    bbPval <- 2 * pnorm(-abs(naive / sds))
+    bbPval <- 2 * pnorm(-abs(naive / naiveSD))
     bbAvgPower <- min(sum(p.adjust(bbPval, method = "BH") < bbQuantile) / empNonzero, 1)
     
     # Reporting
@@ -230,16 +236,17 @@ runSim <- function(config) {
 # Running simulation --------
 configurations <- expand.grid(minGeneSize = 10,
                               maxGeneSize = 100,
-                              totSNR = c(0.2, 0.1),
+                              totSNR = c(2, 1, 0.5, 0.25),
                               signal = c("weak"), 
                               sparsity = c("sparse", "dense"),
                               rho = 0.8,
                               nSubjects = 10^4,
                               MAFthreshold = 0.1,
                               pvalThreshold = 0.05,
-                              genomSize = 2000,
+                              genomSize = 20000,
                               pNullGenes = c(1 - 0.025, 1 - 0.0025),
-                              seed = 1:50)
+                              seed = 101:200)
+settings <- which(configurations$totSNR %in% c(2, 0.25))
 result <- runSim(configurations[setting, ])
-filename <- paste("results/fullGenome_A_2000genes_setting", setting, ".rds", sep = "")
+filename <- paste("results/fullGenome_D_20000genes_setting", setting, "B.rds", sep = "")
 saveRDS(result, file = filename)
