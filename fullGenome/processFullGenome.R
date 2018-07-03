@@ -1,4 +1,9 @@
-filenames <- as.list(dir(path = 'fullGenome/results', pattern="fullGenome_D_*"))
+library(magrittr)
+library(dplyr)
+library(reshape2)
+library(ggplot2)
+
+filenames <- as.list(dir(path = 'fullGenome/results', pattern="fullGenome_C_*"))
 filenames <- lapply(filenames, function(x) paste0('fullGenome/results/', x))
 filenames <- as.character(filenames)
 results <- vector(length(filenames), mode = "list")
@@ -21,9 +26,6 @@ for(i in 1:length(filenames)) {
 results <- results[!sapply(results, is.null)]
 
 # Power ----------
-library(dplyr)
-library(reshape2)
-library(ggplot2)
 power <- do.call("rbind", lapply(results, function(x) x$power))
 config <- do.call("rbind", lapply(results, function(x) x$dat))
 power <- cbind(config, power)
@@ -38,16 +40,16 @@ power <- group_by(power, totSNR, sparsity, pNullGenes, method, seed) %>%
   summarize(powerSD = sd(power, na.rm = TRUE) / sqrt(sum(!is.na(power))), 
             power = mean(power, na.rm = TRUE))
 
-ggplot(power, aes(x = log2(totSNR), y = power, col = method, linetype = method, shape = method)) + 
+temp <- subset(power, totSNR != 0.125)
+temp <- subset(temp, !(totSNR == 0.25 & pNullGenes == 0.975))
+ggplot(temp, aes(x = log2(totSNR), y = power, col = method, linetype = method, shape = method)) + 
   geom_line() + geom_point() + theme_bw() +
-  facet_grid(sparsity ~ pNullGenes, labeller = "label_both") + 
+  facet_grid(sparsity ~ pNullGenes, labeller = "label_both", scales = "free_x") + 
   geom_segment(aes(xend = log2(totSNR), 
                    yend = pmin(power + 2 * powerSD, 1), y = pmax(power - 2 * powerSD, 0)))
+# ggsave(file = "figures/5000genesPower.pdf", width = 5, height = 2.5)
 
 # Cover ----------
-library(dplyr)
-library(reshape2)
-library(ggplot2)
 cover <- do.call("rbind", lapply(results, function(x) x$cover))
 config <- do.call("rbind", lapply(results, function(x) x$dat))
 cover <- cbind(config, cover)
@@ -60,13 +62,16 @@ cover <- group_by(cover, totSNR, sparsity, pNullGenes, method, seed) %>%
   summarize(coverSD = sd(cover, na.rm = TRUE) / sqrt(sum(!is.na(cover))), 
             cover = mean(cover, na.rm = TRUE))
 
-ggplot(cover, aes(x = totSNR, y = cover, col = method, linetype = method, shape = method)) + 
+temp <- subset(cover, totSNR != 0.125)
+temp <- subset(temp, !(totSNR == 0.25 & pNullGenes == 0.975))
+ggplot(temp, aes(x = totSNR, y = cover, col = method, linetype = method, shape = method)) + 
   geom_line() + geom_point() + theme_bw() +
   facet_grid(sparsity ~ pNullGenes, labeller = "label_both") + 
   geom_segment(aes(xend = totSNR, 
                    yend = pmin(cover + 2 * coverSD, 1), 
                    y = pmax(cover - 2 * coverSD, 0))) + 
   geom_hline(yintercept = 0.95)
+# ggsave(file = "figures/5000genesCover.pdf", width = 5, height = 2.5)
 
 
 

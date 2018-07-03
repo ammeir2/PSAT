@@ -248,7 +248,7 @@ mvnQuadratic <- function(y, sigma, testMat = "wald",
         warning("Test matrix nearly singular: using tmg sampler instead of PSAT sampler!")
         quadraticSampler <- "tmg"
       } else {
-        nullSample <- sampleQuadraticConstraint(nullMu, sigma,
+        nullSample <- sampleQuadraticConstraint(nullMu, as.matrix(sigma),
                                                 init = y,
                                                 threshold, testMat,
                                                 sampSize = nSamples,
