@@ -1,4 +1,4 @@
-# # Information from cluster ---
+# Information from cluster ---
 args <- commandArgs(TRUE)
 eval(parse(text=args[[1]]))
 setting <- as.numeric(setting)
@@ -98,7 +98,7 @@ genGene <- function(sqrtMats, nSubjects,
 }
 
 # Simulation function --------
-runSim <- function(config) {
+runSim <- function(config, verbose = TRUE) {
   attach(config, warn.conflicts = FALSE)
   set.seed(seed)
   seeds <- sample.int(10^6, genomSize)
@@ -114,6 +114,8 @@ runSim <- function(config) {
     sparseProbs <- c(4:1) / 10
   } else if(sparsity == "dense") {
     sparseProbs <- 1:4 / 10
+  } else if(sparsity == "densest") {
+    sparseProbs <- c(0, 0, 0, 1)
   }
   
   # SNR levels -----
@@ -128,7 +130,7 @@ runSim <- function(config) {
   yMean <- rep(0, nSubjects)
   print("Generating response")
   sparseMats <- list(genomSize, mode = "list")
-  pb <- txtProgressBar(min = 0, max = genomSize, style = 3)
+  if(verbose) pb <- txtProgressBar(min = 0, max = genomSize, style = 3)
   totVariants <- 0  
   for(g in 1:genomSize) {
     # Generating data
@@ -141,10 +143,10 @@ runSim <- function(config) {
     sparseMats[[g]] <- dat$sparseX
     yMean <- yMean + dat$mu
     totVariants <- totVariants + ncol(dat$X)
-    setTxtProgressBar(pb, g)
+    if(verbose) setTxtProgressBar(pb, g)
   }
   rm(dat)
-  close(pb)
+  if(verbose) close(pb)
   yMean <- yMean / sd(yMean) * totSNR
   y <- rnorm(nSubjects, mean = yMean, sd = 1)
   yMean <- yMean - mean(y)
@@ -155,7 +157,7 @@ runSim <- function(config) {
   slot <- 1
   set.seed(seed)
   selectedGenes <- vector(genomSize, mode = "list")
-  pb <- txtProgressBar(min = 0, max = genomSize, style = 3)
+  if(verbose) pb <- txtProgressBar(min = 0, max = genomSize, style = 3)
   univPvals <- numeric(totVariants)
   trueCoefs <- numeric(totVariants)
   univInd <- 1
@@ -168,8 +170,9 @@ runSim <- function(config) {
                    seed = seeds[g])  
     X <- dat$X
     trueCoef <- dat$coef
+    lmPvals <- summary(lm(y ~ X))$coefficients[-1, 4]
     for(i in 1:ncol(X)) {
-      univPvals[univInd] <- summary(lm(y ~ X[, i]))$coefficients[2, 4]
+      univPvals[univInd] <- lmPvals[i]
       trueCoefs[univInd] <- trueCoef[i]
       univInd <- univInd + 1
     }
@@ -182,7 +185,8 @@ runSim <- function(config) {
     coefCov <- yvar * XtXinv
     waldMat <- XtX / as.numeric(var(y - X %*% naiveCoef))
     waldStat <- as.numeric(t(naiveCoef) %*% waldMat %*% naiveCoef)
-    critVal <- qchisq(pvalThreshold / genomSize, df = ncol(X), lower.tail = FALSE)
+    waldPval <- pchisq(waldStat, df = ncol(X), lower.tail = FALSE)
+    critVal <- qchisq(pvalThreshold, df = ncol(X), lower.tail = FALSE)
     naiveSD <- sqrt(diag(coefCov)) * sd(y - as.numeric(X %*% naiveCoef)) / sd(y)
     trueProj <- XtXinv %*% t(X) %*% yMean
     # print(c(g, ncol(X), waldStat, critVal, sum(abs(trueCoef)), dat$nonzero))
@@ -193,13 +197,14 @@ runSim <- function(config) {
                                     true = trueCoef,
                                     trueProj = trueProj,
                                     waldMat = waldMat,
-                                    threshold = critVal)
+                                    threshold = critVal,
+                                    waldPval = waldPval)
       slot <- slot + 1
     }
-    setTxtProgressBar(pb, g)
+    if(verbose) setTxtProgressBar(pb, g)
   }
   rm(X)
-  close(pb)
+  if(verbose) close(pb)
   
   if(slot == 1) {
     result <- list()
@@ -209,12 +214,23 @@ runSim <- function(config) {
     return(result)
   }
   
-  # Conducting Inference
+  # selection with BH
   selectedGenes <- selectedGenes[1:(slot - 1)]
+  aggPvals <- sapply(selectedGenes, function(x) x$waldPval)
+  aggQvals <- p.adjust(aggPvals, method = "BH", n = genomSize)
+  keep <- aggQvals < pvalThreshold
+  bhFrac <- sum(keep) / genomSize
+  selectedGenes <- selectedGenes[keep]
+  for(i in 1:length(selectedGenes)) {
+    geneDF <- length(selectedGenes[[i]]$obs)
+    selectedGenes[[i]]$threshold <- qchisq(1 - pvalThreshold * bhFrac, df = geneDF)
+  }
+  
+  # Conducting Inference
   inferenceResults <- vector(length(selectedGenes) + 1, mode = "list")
   totVariants <- sapply(selectedGenes, function(x) ncol(x$cov)) %>% sum()
   print("Conducting Inference")
-  pb <- txtProgressBar(min = 0, max = length(selectedGenes), style = 3)
+  if(verbose) pb <- txtProgressBar(min = 0, max = length(selectedGenes), style = 3)
   for(g in 1:length(selectedGenes)) {
     gene <- selectedGenes[[g]]
     naive <- gene$obs %>% as.numeric()
@@ -266,51 +282,55 @@ runSim <- function(config) {
     geneResult$FDR <- fdrFrame
     inferenceResults[[g]] <- geneResult
 
-    setTxtProgressBar(pb, g)
+    if(verbose) setTxtProgressBar(pb, g)
   }
-  close(pb)
+  if(verbose) close(pb)
   
   univQvals <- p.adjust(univPvals, method = "BH")
+  univBY <- p.adjust(univPvals, method = "BY")
   nDiscoveries <- sum(univQvals < 0.05 & trueCoefs != 0)
+  byDiscovers <- sum(univBY < 0.05 & trueCoefs != 0)
   bhFDR <- sum(univQvals < 0.05 & trueCoefs == 0) / max(sum(univQvals < 0.05), 1)
-  inferenceResults[[length(inferenceResults)]] <- c(bhFDR = bhFDR,
-                                                    univDiscoveries = nDiscoveries, 
-                                                    nNonNull = sum(trueCoefs != 0))
+  byFDR <- sum(univBY < 0.05 & trueCoefs == 0) / max(sum(univBY < 0.05), 1)
+  nNonNull <- sum(trueCoefs != 0)
+  bh <- c(fdr = bhFDR, discoveries = nDiscoveries, nNonNull = nNonNull)
+  by <- c(fdr = byFDR, discoveries = byDiscovers, nNonNull = nNonNull)
+  inferenceResults[[length(inferenceResults)]] <- rbind(bh, by)
   return(inferenceResults)
 }
 
 # Running simulation --------
 configA <- expand.grid(geneSizes = list(c(10, 55, 100)),
-                       totSNR = 2^seq(from = -4, to = 0),
+                       totSNR = 2^seq(from = -3, to = -1),
                        # totSNR = 1,
                        signal = c("weak"), 
-                       sparsity = c("sparse", "dense"),
+                       sparsity = c("sparse", "dense", "densest"),
                        rho = 0.8,
                        nSubjects = 10^4,
                        MAFthreshold = 0.1,
                        pvalThreshold = 0.05,
                        genomSize = 5000,
                        pNullGenes = c(1 - 0.0025),
-                       seed = 1:50)
+                       seed = 81:120)
 configB <- expand.grid(geneSizes = list(c(10, 55, 100)),
-                       totSNR = 2^seq(from = -3, to = 1),
+                       totSNR = 2^seq(from = -1, to = 1),
                        signal = c("weak"), 
-                       sparsity = c("sparse", "dense"),
+                       sparsity = c("sparse", "dense", "densest"),
                        rho = 0.8,
                        nSubjects = 10^4,
                        MAFthreshold = 0.1,
                        pvalThreshold = 0.05,
                        genomSize = 5000,
                        pNullGenes = c(1 - 0.025),
-                       seed = 1:50)
-configurations <- rbind(configA, configB)
+                       seed = 81:120)
+configurations <- rbind(configB, configA)
 # set.seed(1)
 # configurations <- configurations[order(runif(nrow(configurations))), ]
 
 seed <- configurations[setting, ]$seed
 genes <- configurations[setting, ]$genomSize
-system.time(result <- runSim(configurations[setting, ]))
-filename <- paste("results/indepGenome_E_", genes, 
+system.time(result <- runSim(configurations[setting, ], verbose = TRUE))
+filename <- paste("results/bhGenome_D_", genes, 
                   "genes_seed", seed, 
                   "_setting", setting, ".rds", sep = "")
 saveRDS(result, file = filename)

@@ -2,11 +2,12 @@
 .Rhistory
 .RData
 .Ruserdata
+oldSims/*
+simulations/*
+fullGenome/*
 mleExperiments/*
 data analysis/*
-simulations/*
 figures/*
-fullGenome/results/*
 src/PSAT.so
 src/quadraticSampler.o
 src/RcppExports.o

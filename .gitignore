@@ -14,3 +14,4 @@ vignettes/linear_tests_cache/*
 vignettes/quadratic_tests_cache/*
 vignettes/rsconnect/*
 articles/*
+oldSims/results/*
