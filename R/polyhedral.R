@@ -33,8 +33,10 @@ polyhedral.workhorse <- function(eta, u, sigma, testMat, threshold,
   } else {
     ci <- NULL
   }
+  
+  # print(computeUMPU(theta, lower, upper, theta, etaSigma))
 
-  return(list(pval = etaPval, ci = ci, noCorrection = delta < 0))
+  return(list(pval = as.numeric(etaPval), ci = ci, noCorrection = delta < 0))
 }
 
 linearPolyhedral <- function(eta, u, sigma, a, threshold,
@@ -66,7 +68,7 @@ linearPolyhedral <- function(eta, u, sigma, a, threshold,
   } else {
     ci <- NULL
   }
-
+  
   return(list(pval = etaPval, ci = ci))
 }
 
@@ -119,6 +121,7 @@ findPolyCIlimits <- function(theta, etaSigma, lower, upper, alpha) {
   return(ci)
 }
 
+# A function for computing 
 ptruncNorm <- function(mu, x, sd, l, u) {
   if(l == u) {
     return(pnorm(x, mu, sd))
@@ -159,10 +162,7 @@ computeCondExp <- function(lower, upper, mu = 0, sd = 1, side = "upper") {
 # c1 and c2 are test limits
 # lower and upper are polyherdal truncations (through conditioning on selection event and W)
 computeTestExp <- function(c1, c2, lower, upper, mu, sd) {
-  if(c1 > c2) {
-    return(list(exp = 10^10, level = 0))
-  }
-  
+  c1 <- c2 - exp(c1)
   if(c2 < lower) {
     pupper <- pnorm(upper, mean = mu, sd = sd, lower.tail = FALSE)
     pmid <- pnorm(lower, mean = mu, sd = sd) - pnorm(c2, mean = mu, sd = sd)
@@ -198,7 +198,7 @@ optimTestEquation <- function(c1, c2, tlower, tupper, mu, sd, truncExp) {
 
 # A Function for computing Fithian's optimal test
 computeUMPU <- function(theta, lower, upper, mu, etaSigma) {
-  if(theta < mu) {
+  if(theta <= mu) {
     c2 <- -theta
     tlower <- -upper
     tupper <- -lower
@@ -207,12 +207,17 @@ computeUMPU <- function(theta, lower, upper, mu, etaSigma) {
     tupper <- upper
     c2 <- theta
   }
+  
   condExp <- computeCondExp(tlower, tupper, mu, sqrt(etaSigma), side = "both")
-  c1 <- nlm(f = optimTestEquation, p = -c2,
+  c1 <- nlm(f = optimTestEquation, p = log(2 * (c2 - mu)),
             c2 = c2, tlower = tlower, tupper = tupper,
             mu = mu, sd = sqrt(etaSigma), truncExp = condExp)$estimate
   testLevel <- computeTestExp(c1, c2, tlower, tupper, mu, sqrt(etaSigma))
+  c1 <- c2 - exp(c1)
   return(testLevel$level)
 }
 
-
+# A Function for computing Fithian's optimal CIs
+computeUMAU <- function(theta, lower, upper, mu, etaSigma) {
+  print(computeUMPU, theta, lower, upper, mu, etaSigma)
+}

@@ -17,7 +17,8 @@ Imports: Rcpp,
         CompQuadForm,
         ggplot2,
         reshape2,
-        magrittr
+        magrittr,
+        tmg
 Suggests: clusterGeneration,
         expm,
         gridExtra
