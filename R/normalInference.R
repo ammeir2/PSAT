@@ -171,12 +171,17 @@ mvnQuadratic <- function(y, sigma, testMat = "wald",
     }
   }
 
-  pthreshold <- CompQuadForm::liu(threshold, quadlam)
+  if(is.null(pval_threshold)) {
+    pthreshold <- CompQuadForm::liu(threshold, quadlam)
+  }
 
   y <- as.numeric(y)
   testStat <- as.numeric(t(y) %*% testMat %*% y)
   if(testStat < threshold) {
-    stop("Test statistic is below the threshold, model not selected!")
+    warning("Test statistic is below the computed threshold, verify that the model was selected!")
+    warning("Assuming that the effective threshold is the observed value.")
+    threshold <- testStat - testStat/10^-4
+    pthreshold <- CompQuadForm::liu(threshold, quadlam)
   }
 
   t2 <- switchTune * pthreshold

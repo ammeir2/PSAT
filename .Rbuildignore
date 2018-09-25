@@ -16,5 +16,6 @@ vignettes/quadratic_tests_cache/*
 vignettes/rsconnect/*
 vignettes/*
 tests/*
+tex/*
 ^.*\.Rproj$
 ^\.Rproj\.user$

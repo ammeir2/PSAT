@@ -46,7 +46,7 @@ results$method <- factor(results$method,
 results$Dimension <- results$p
 results$snr <- results$signal
 
-# pdf("figures/mleplot_B.pdf",pagecentre=T, width=8,height=2.5 ,paper = "special")
+# pdf("figures/mleplot_B.pdf",pagecentre=T, width=8,height=3 ,paper = "special")
 ggplot(subset(results, signal != 0.05),
        aes(x = n / 1000, y = mse,
                     col = method, shape = method, linetype = method)) +

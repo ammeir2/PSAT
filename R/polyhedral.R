@@ -160,7 +160,7 @@ computeCondExp <- function(lower, upper, mu = 0, sd = 1, side = "upper") {
 # lower and upper are polyherdal truncations (through conditioning on selection event and W)
 computeTestExp <- function(c1, c2, lower, upper, mu, sd) {
   if(c1 > c2) {
-    return(Inf)
+    return(list(exp = 10^10, level = 0))
   }
   
   if(c2 < lower) {

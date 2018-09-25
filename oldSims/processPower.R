@@ -12,7 +12,7 @@ for(i in 1:length(filenames)) {
 }
 
 results <- do.call("c", do.call("c", results))
-processResults <- function(res, level = 0.1) {
+processResults <- function(res, level = 0.05) {
   par <- res$params
   sparsity <- par[[4]]
 
