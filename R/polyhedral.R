@@ -162,7 +162,11 @@ computeCondExp <- function(lower, upper, mu = 0, sd = 1, side = "upper") {
 # c1 and c2 are test limits
 # lower and upper are polyherdal truncations (through conditioning on selection event and W)
 computeTestExp <- function(c1, c2, lower, upper, mu, sd) {
-  c1 <- c2 - exp(c1)
+  # c1 <- c2 - exp(c1)
+  if(c1 < upper & c1 > lower) {
+    c1 <- lower
+  }
+  
   if(c2 < lower) {
     pupper <- pnorm(upper, mean = mu, sd = sd, lower.tail = FALSE)
     pmid <- pnorm(lower, mean = mu, sd = sd) - pnorm(c2, mean = mu, sd = sd)
@@ -193,7 +197,8 @@ computeTestExp <- function(c1, c2, lower, upper, mu, sd) {
 # Optima Test equation
 optimTestEquation <- function(c1, c2, tlower, tupper, mu, sd, truncExp) {
   levelExp <- computeTestExp(c1, c2, tlower, tupper, mu, sd) 
-  return((levelExp$exp - levelExp$level * truncExp)^2)
+  # return((levelExp$exp - levelExp$level * truncExp)^2)
+  return(levelExp$exp - levelExp$level * truncExp)
 }
 
 # A Function for computing Fithian's optimal test
@@ -208,16 +213,39 @@ computeUMPU <- function(theta, lower, upper, mu, etaSigma) {
     c2 <- theta
   }
   
+  # c1 <- nlm(f = optimTestEquation, p = log(2 * (c2 - mu)),
+  #           c2 = c2, tlower = tlower, tupper = tupper,
+  #           mu = mu, sd = sqrt(etaSigma), truncExp = condExp)$estimate
+  # testLevel <- computeTestExp(c1, c2, tlower, tupper, mu, sqrt(etaSigma))
+  # c1 <- c2 - exp(c1)
+  
   condExp <- computeCondExp(tlower, tupper, mu, sqrt(etaSigma), side = "both")
-  c1 <- nlm(f = optimTestEquation, p = log(2 * (c2 - mu)),
-            c2 = c2, tlower = tlower, tupper = tupper,
-            mu = mu, sd = sqrt(etaSigma), truncExp = condExp)$estimate
+  c1 <- UMPUlowerValSearch(c2, tlower, tupper, mu, sqrt(etaSigma), condExp)
   testLevel <- computeTestExp(c1, c2, tlower, tupper, mu, sqrt(etaSigma))
-  c1 <- c2 - exp(c1)
   return(testLevel$level)
 }
 
-# A Function for computing Fithian's optimal CIs
-computeUMAU <- function(theta, lower, upper, mu, etaSigma) {
-  print(computeUMPU, theta, lower, upper, mu, etaSigma)
+UMPUlowerValSearch <- function(c2, l, u, mu, sd, truncExp) {
+  c1 <- mu
+  fval <- optimTestEquation(mu, c2, l, u, mu, sd, truncExp)
+  # if(fval < 0) {
+  #   return(mu - (c2 - mu))
+  # }
+  nval <- fval
+  while(sign(fval) == sign(nval)) {
+    c1 <- c1 - sd
+    nval <- optimTestEquation(c1, c2, l, u, mu, sd, truncExp)
+    if(c1 < mu - 10 * sd) {
+      c1 <- min(l, mu - (c2 - mu))
+      return(c1)
+    }
+  }
+  
+  uniresult <- uniroot(f = optimTestEquation, interval = c(c1, mu),
+                       c2 = c2, tlower = l, tupper = u, mu = mu, sd = sd,
+                       truncExp = truncExp)
+  return(uniresult$root)
 }
+
+
+
