@@ -28,13 +28,13 @@ polyhedral.workhorse <- function(eta, u, sigma, testMat, threshold,
   }
 
   # Computing CI ----------------
-  if(computeCI) {
+  if(computeCI) {#& truncPmethod == "symmetric") {
     ci <- suppressWarnings(findPolyCIlimits(theta, etaSigma, lower, upper, alpha))
+  } else if(computeCI & truncPmethod == "UMPU" & FALSE) {
+    ci <- UMAUsearch(theta, lower, upper, etaSigma, alpha)
   } else {
     ci <- NULL
   }
-  
-  # print(computeUMPU(theta, lower, upper, theta, etaSigma))
 
   return(list(pval = as.numeric(etaPval), ci = ci, noCorrection = delta < 0))
 }
@@ -247,5 +247,47 @@ UMPUlowerValSearch <- function(c2, l, u, mu, sd, truncExp) {
   return(uniresult$root)
 }
 
+UMAUsearch <- function(theta, lower, upper, etaSigma, alpha) {
+  maxSteps <- 5
+  ulimit <- theta + 0.01 * sqrt(etaSigma)
+  upval <- computeUMPU(theta, lower, upper, ulimit, etaSigma)
+  ucount <- 0
+  while(upval < 1 - alpha / 2) {
+    ulimit <- ulimit + sqrt(etaSigma)
+    upval <- computeUMPU(theta, lower, upper, ulimit, etaSigma)
+    ucount <- ucount + 1
+    if(ucount > maxSteps) {
+      break
+    }
+  }
+  
+  llimit <- theta - 0.01 * sqrt(etaSigma) 
+  lpval <- computeUMPU(theta, lower, upper, llimit, etaSigma)
+  lcount <- 0
+  while(lpval > alpha / 2) {
+    llimit <- llimit - sqrt(etaSigma)
+    lpval <- computeUMPU(theta, lower, upper, llimit, etaSigma)
+    lcount <- lcount + 1
+    if(lcount > maxSteps) {
+      break
+    }
+  }
+  
+  if(ucount <= maxSteps) {
+    uci <- uniroot(function(m) computeUMPU(theta, lower, upper, m, etaSigma) - (1 - alpha / 2),
+                   interval = c(llimit, ulimit))$root
+  } else {
+    uci <- ulimit
+  }
+  
+  if(lcount <= maxSteps) {
+    lci <- uniroot(function(m) computeUMPU(theta, lower, upper, m, etaSigma) - alpha / 2,
+                   interval = c(llimit, ulimit))$root
+  } else {
+    lci <- llimit
+  }
+  
+  return(c(lci, uci))
+}
 
 

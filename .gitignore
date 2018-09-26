@@ -5,7 +5,7 @@
 mleExperiments/*
 data analysis/*
 fullGenome/results/*
-simulations/*
+simulations/results/*
 figures/*
 src/PSAT.so
 src/quadraticSampler.o
