@@ -1,7 +1,7 @@
 # Cluster arguments
 # args <- commandArgs(TRUE)
 # eval(parse(text=args[[1]]))
-setting <- as.numeric(setting)
+# setting <- as.numeric(setting)
 
 # Packages
 library(PSAT)
@@ -199,6 +199,16 @@ configC <- expand.grid(n = c(10^4),
 configurations <- rbind(configC, configA, configB)
 setting <- setting
 
-system.time(results <- apply(configurations, 1, runSim, seed = setting))
-filename <- paste("results/covByRef_H_seed", setting, ".rds", sep = "")
-saveRDS(results, file = filename)
+library(foreach)
+library(doParallel)
+registerDoParallel(cores = 2)
+foreach(i = 1:100) %dopar% {
+  print(i)
+  system.time(results <- apply(configurations, 1, runSim, seed = i))
+  filename <- paste("simulations/results/covByRef_FIXED_A_seed_", i, ".rds", sep = "")
+  saveRDS(results, file = filename)
+}
+
+# system.time(results <- apply(configurations, 1, runSim, seed = setting))
+# filename <- paste("results/covByRef_H_seed", setting, ".rds", sep = "")
+# saveRDS(results, file = filename)
