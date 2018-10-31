@@ -7,12 +7,13 @@ polyhedral.workhorse <- function(eta, u, sigma, testMat, threshold,
   vKc <- as.numeric(t(v) %*% testMat %*% c)
   cKc <- as.numeric(t(c) %*% testMat %*% c)
   vKv <- as.numeric(t(v) %*% testMat %*% v)
-  if(cKc < 0) {
+  if(cKc < 0 & abs(cKc / vKv) < 10^-2) {
     # If cKc is negative then we are either dealing with a non-positive definite test matrix,
     # or numerical instability due to the contrast being uncorrelated with the test matrix
-    if(abs(cKc / vKv) < 10^-2) {
-      delta <- -Inf
-    }
+    delta <- -Inf
+  } else if(max(abs(cKc / vKv), abs(vKc / vKv)) < 10^-4) { 
+    # It may also be the case that the contrast plays a negligible role in the selection 
+    delta <- -Inf
   } else {
     delta <- 4 * (vKc)^2 - 4 * cKc * (vKv - threshold)
   }
@@ -20,7 +21,7 @@ polyhedral.workhorse <- function(eta, u, sigma, testMat, threshold,
   if(delta >= 0) {
     upper <- (-2 * vKc + sqrt(delta)) / (2 * cKc)
     lower <- (-2 * vKc - sqrt(delta)) / (2 * cKc)
-    if(cKc < 0) {
+    if(cKc < 0) { # This will only happen if K is not positive semi-definite
       tempval <- lower
       lower <- upper
       upper <- tempval
