@@ -28,9 +28,9 @@ polyhedral.workhorse <- function(eta, u, sigma, testMat, threshold,
   }
 
   # Computing CI ----------------
-  if(computeCI) {#& truncPmethod == "symmetric") {
+  if(computeCI & truncPmethod == "symmetric") {
     ci <- suppressWarnings(findPolyCIlimits(theta, etaSigma, lower, upper, alpha))
-  } else if(computeCI & truncPmethod == "UMPU" & FALSE) {
+  } else if(computeCI & truncPmethod == "UMPU") {
     ci <- UMAUsearch(theta, lower, upper, etaSigma, alpha)
   } else {
     ci <- NULL

@@ -3,7 +3,7 @@ library(ggplot2)
 library(dplyr)
 library(tidyr)
 
-filenames <- as.list(dir(path = 'simulations/results', pattern="covByRef_H_*"))
+filenames <- as.list(dir(path = 'simulations/results', pattern="covByRef_FIXED_A_seed_*"))
 filenames <- lapply(filenames, function(x) paste0('simulations/results/', x))
 filenames <- as.character(filenames)
 results <- vector(length(filenames), mode = "list")

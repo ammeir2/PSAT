@@ -70,7 +70,7 @@ compPower <- function(pvals, true, level = 0.05) {
   return(sum(true != 0 & qvals < level) / sum(true != 0))
 }
 
-runSim <- function(config, seed) {
+runSim <- function(config, seed, verbose = TRUE) {
   set.seed(seed)
   n <- config[["n"]]
   refSize <- config[["refSize"]]
@@ -126,7 +126,7 @@ runSim <- function(config, seed) {
       wald <- as.numeric(t(naive) %*% scaledRefXtX %*% naive) / varEst
       waldPval <- 1 - pchisq(wald, df = p)
     }
-    cat("selection prob: ", m * 1/tries, "\n")
+    if(verbose) cat("selection prob: ", m * 1/tries, "\n")
     threshold <- qchisq(1 - pvalThreshold, df = p)
     naiveSD <- sqrt(varEst)
     if(waldPval < pvalThreshold * 0.05^2) {
@@ -146,8 +146,8 @@ runSim <- function(config, seed) {
                                                 estimate = "naive",
                                                 ci_type = c("naive"),
                                                 threshold = threshold,
-                                                verbose = TRUE, control = ctrl))[3]
-    cat("PSAT time: ", time, "\n")
+                                                verbose = FALSE, control = ctrl))[3]
+    if(verbose) cat("PSAT time: ", time, "\n")
     
     # p-values
     hybrid <- getPval(psatfit, type = "hybrid")
@@ -158,14 +158,16 @@ runSim <- function(config, seed) {
     power[m, ] <- apply(pvals[, 1:3], 2, compPower, true)
     
     # Reporting intermediate
-    print(c(m, config))
-    print(colMeans(fdr[1:m, , drop = FALSE]))
-    print(colMeans(power[1:m, , drop = FALSE]))
+    if(verbose) {
+      print(c(m, config))
+      print(colMeans(fdr[1:m, , drop = FALSE]))
+      print(colMeans(power[1:m, , drop = FALSE]))
+    }
     result[[1 + m]] <- pvals
   }
   
   result[[1]][["R_squared"]] <- var(mu) / (var(mu) + ysig^2)
-  print(result[[1]])
+  if(verbose) print(result[[1]])
   return(result)
 }
 
@@ -201,10 +203,10 @@ setting <- setting
 
 library(foreach)
 library(doParallel)
-registerDoParallel(cores = 2)
-foreach(i = 1:100) %dopar% {
+registerDoParallel(cores = 1)
+foreach(i = 201:300) %dopar% {
   print(i)
-  system.time(results <- apply(configurations, 1, runSim, seed = i))
+  system.time(results <- apply(configurations, 1, runSim, seed = i, verbose = FALSE))
   filename <- paste("simulations/results/covByRef_FIXED_A_seed_", i, ".rds", sep = "")
   saveRDS(results, file = filename)
 }
