@@ -8,10 +8,15 @@ polyhedral.workhorse <- function(eta, u, sigma, testMat, threshold,
   cKc <- as.numeric(t(c) %*% testMat %*% c)
   vKv <- as.numeric(t(v) %*% testMat %*% v)
   if(cKc < 0) {
-    message("it apperas that test matrix is not positive definite, results may be unreliable.")
+    # If cKc is negative then we are either dealing with a non-positive definite test matrix,
+    # or numerical instability due to the contrast being uncorrelated with the test matrix
+    if(abs(cKc / vKv) < 10^-2) {
+      delta <- -Inf
+    }
+  } else {
+    delta <- 4 * (vKc)^2 - 4 * cKc * (vKv - threshold)
   }
-
-  delta <- 4 * (vKc)^2 - 4 * cKc * (vKv - threshold)
+  
   if(delta >= 0) {
     upper <- (-2 * vKc + sqrt(delta)) / (2 * cKc)
     lower <- (-2 * vKc - sqrt(delta)) / (2 * cKc)
@@ -27,6 +32,7 @@ polyhedral.workhorse <- function(eta, u, sigma, testMat, threshold,
 
   # Computing p-value --------------
   theta <- as.numeric(t(eta) %*% u)
+  theta^2 * cKc + 2 * theta * vKc + vKv
   etaSigma <- as.numeric(t(eta) %*% sigma %*% eta)
   if(truncPmethod == "symmetric" | delta < 0) {
     etaPval <- ptruncNorm(0, theta, sqrt(etaSigma), lower, upper)
