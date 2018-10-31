@@ -8,7 +8,7 @@
 #'
 #' @param sigma the covariance matrix of \code{y}.
 #'
-#' @param testMat the test matrix \eqn{K} used in the aggregate test
+#' @param testMat the (positive semi-definite) test matrix \eqn{K} used in the aggregate test
 #'
 #' @param threshold the threshold \eqn{c > 0} used in the aggregate test.
 #'

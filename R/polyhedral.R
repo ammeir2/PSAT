@@ -7,11 +7,19 @@ polyhedral.workhorse <- function(eta, u, sigma, testMat, threshold,
   vKc <- as.numeric(t(v) %*% testMat %*% c)
   cKc <- as.numeric(t(c) %*% testMat %*% c)
   vKv <- as.numeric(t(v) %*% testMat %*% v)
+  if(cKc < 0) {
+    message("it apperas that test matrix is not positive definite, results may be unreliable.")
+  }
 
   delta <- 4 * (vKc)^2 - 4 * cKc * (vKv - threshold)
   if(delta >= 0) {
     upper <- (-2 * vKc + sqrt(delta)) / (2 * cKc)
     lower <- (-2 * vKc - sqrt(delta)) / (2 * cKc)
+    if(cKc < 0) {
+      tempval <- lower
+      lower <- upper
+      upper <- tempval
+    }
   } else {
     upper <- 0
     lower <- 0
@@ -28,12 +36,22 @@ polyhedral.workhorse <- function(eta, u, sigma, testMat, threshold,
   }
 
   # Computing CI ----------------
-  if(computeCI & truncPmethod == "symmetric") {
-    ci <- suppressWarnings(findPolyCIlimits(theta, etaSigma, lower, upper, alpha))
-  } else if(computeCI & truncPmethod == "UMPU") {
+  umpuFail <- FALSE
+  if(computeCI & truncPmethod == "UMPU") {
     ci <- UMAUsearch(theta, lower, upper, etaSigma, alpha)
-  } else {
-    ci <- NULL
+    if(ci$fail) {
+      umpuFail <- TRUE
+    } else {
+      ci <- ci$ci
+    }
+  }
+  
+  if(computeCI & (truncPmethod == "symmetric" | umpuFail)) {
+    ci <- suppressWarnings(findPolyCIlimits(theta, etaSigma, lower, upper, alpha))
+  } 
+  
+  if(computeCI & !(truncPmethod %in% c("symmetric", "UMPU"))) {
+    stop("unknown polyhedral CI computation method!")
   }
 
   return(list(pval = as.numeric(etaPval), ci = ci, noCorrection = delta < 0))
@@ -257,7 +275,7 @@ UMAUsearch <- function(theta, lower, upper, etaSigma, alpha) {
     upval <- computeUMPU(theta, lower, upper, ulimit, etaSigma)
     ucount <- ucount + 1
     if(ucount > maxSteps) {
-      break
+      return(list(fail = TRUE))
     }
   }
   
@@ -269,7 +287,7 @@ UMAUsearch <- function(theta, lower, upper, etaSigma, alpha) {
     lpval <- computeUMPU(theta, lower, upper, llimit, etaSigma)
     lcount <- lcount + 1
     if(lcount > maxSteps) {
-      break
+      return(list(fail = TRUE))
     }
   }
   
@@ -287,7 +305,7 @@ UMAUsearch <- function(theta, lower, upper, etaSigma, alpha) {
     lci <- llimit
   }
   
-  return(c(lci, uci))
+  return(list(fail = FALSE, ci = c(lci, uci)))
 }
 
 

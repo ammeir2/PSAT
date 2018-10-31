@@ -15,7 +15,7 @@ mvnQuadratic(y, sigma, testMat = "wald", threshold = NULL,
 
 \item{sigma}{the covariance matrix of \code{y}.}
 
-\item{testMat}{the test matrix \eqn{K} used in the aggregate test}
+\item{testMat}{the (positive semi-definite) test matrix \eqn{K} used in the aggregate test}
 
 \item{threshold}{the threshold \eqn{c > 0} used in the aggregate test.}
 
